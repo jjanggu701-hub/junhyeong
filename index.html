@@ -493,8 +493,11 @@ function extractJSON(raw, isArray){
 }
 
 function isEPLine(line){
-  return (line.charAt(0)==='['&&line.indexOf('EP')>-1&&line.indexOf(']')>-1)||
-    (line.length<40&&line.indexOf('EP')===0&&line.length>3&&!isNaN(parseInt(line.charAt(2))));
+  var isBracketEP=(line.charAt(0)==='['&&line.indexOf('EP')>-1&&line.indexOf(']')>-1);
+  var isBracketSEQ=(line.charAt(0)==='['&&line.indexOf('SEQ')>-1&&line.indexOf(']')>-1);
+  var isPlainEP=(line.length<40&&line.indexOf('EP')===0&&line.length>3&&!isNaN(parseInt(line.charAt(2))));
+  var isPlainSEQ=(line.length<40&&line.indexOf('SEQ')===0&&line.length>3);
+  return isBracketEP||isBracketSEQ||isPlainEP||isPlainSEQ;
 }
 function isSceneLine(line){
   if(line.charAt(0)!=='S') return false;
@@ -598,9 +601,10 @@ async function selectIdea(card, idea){
     '콘텐츠명: '+idea.title,
     '컨셉: '+idea.desc,
     '★ 포맷 규칙: '+planFormatRule,
+    '★ 구조 규칙: episodes가 아니라 영상 1편 안의 시퀀스(장면 흐름) 구조야. SEQ1~SEQ5로 한 영상의 흐름을 구성해줘.',
     '',
     'JSON만 출력. 코드블록과 설명 없이.',
-    '{"title":"","subtitle":"","format":"","target":"","hook":"","episodes":["","","","",""],"tools":"","diff":"","revenue":"","thumbnail":"","schedule":""}'
+    '{"title":"","subtitle":"","format":"","target":"","hook":"","sequences":["SEQ1: 훅/오프닝","SEQ2: 전개1","SEQ3: 전개2","SEQ4: 클라이맥스","SEQ5: 마무리/CTA"],"tools":"","diff":"","revenue":"","thumbnail":"","schedule":""}'
   ];
 
   try{
@@ -613,7 +617,7 @@ async function selectIdea(card, idea){
       +'<div class="plan-doc-subtitle">'+(p.subtitle||'')+'</div></div>'
       +'<div class="plan-doc-body">'
       +planRow('FORMAT',p.format||'')+planRow('TARGET',p.target||'')+planRow('HOOK',p.hook||'')
-      +planRow('EPISODES',(p.episodes||[]).map(function(e,i){return '<li><span>EP'+(i+1)+': '+e+'</span></li>';}).join(''),true)
+      +planRow('SEQUENCES',(p.sequences||p.episodes||[]).map(function(e,i){return '<li><span>SEQ'+(i+1)+': '+e+'</span></li>';}).join(''),true)
       +planRow('TOOLS',p.tools||'')+planRow('DIFF',p.diff||'')+planRow('REVENUE',p.revenue||'')
       +planRow('THUMBNAIL',p.thumbnail||'')+planRow('SCHEDULE',p.schedule||'')
       +'</div></div>';
@@ -636,38 +640,42 @@ async function generateTreatment(){
   var timer=startTimer('treat-timer','트리트먼트 작성 중...');
   sec.scrollIntoView({behavior:'smooth',block:'start'});
 
-  var epList=(currentPlan.episodes||[]).slice(0,3).map(function(e,i){return 'EP'+(i+1)+': '+e;}).join(NL);
+  var seqList=(currentPlan.sequences||currentPlan.episodes||[]).map(function(e,i){return 'SEQ'+(i+1)+': '+e;}).join(NL);
+  var fmtForTreat=currentPlan.format||'';
+  var sceneTime='';
+  if(fmtForTreat.indexOf('숏폼')>-1) sceneTime='씬 하나당 5초~15초 (전체 60초~2분 이내)';
+  else sceneTime='씬 하나당 20초~60초 (전체 3분~15분 기준)';
+
   var lines=[
-    '유튜브 영상 트리트먼트를 작성해줘.',
+    '유튜브 영상 1편의 트리트먼트를 작성해줘. 에피소드 시리즈가 아니라 한 영상 안의 시퀀스 흐름이야.',
     '콘텐츠명: '+currentPlan.title,
-    '포맷: '+currentPlan.format,
+    '포맷/길이: '+fmtForTreat,
     '',
-    '에피소드 목록:',
-    epList,
+    '영상 시퀀스 구성:',
+    seqList,
     '',
     '규칙 (반드시 지켜줘):',
-    '1. 에피소드는 위 3개만 작성',
-    '2. 각 에피소드마다 씬을 정확히 5개 작성 (S1~S5)',
-    '3. 씬 하나당 예상시간은 20초~40초',
+    '1. 위 시퀀스 순서대로 영상 1편의 흐름을 구성해줘',
+    '2. 각 시퀀스마다 씬을 3~4개 작성',
+    '3. '+sceneTime,
     '4. 마크다운 절대 사용 금지',
     '5. 아래 형식만 사용',
     '',
-    '[EP1] 에피소드 제목',
-    '흐름: 전체 흐름을 2줄로 설명',
-    'S1 | 장소/상황 | 씬 내용 한 줄 | 30s | cinematic shot of ... (english)',
-    'S2 | 장소/상황 | 씬 내용 한 줄 | 25s | english prompt',
-    'S3 | 장소/상황 | 씬 내용 한 줄 | 35s | english prompt',
-    'S4 | 장소/상황 | 씬 내용 한 줄 | 30s | english prompt',
-    'S5 | 장소/상황 | 씬 내용 한 줄 | 20s | english prompt',
+    '[SEQ1] 시퀀스 이름 (훅/오프닝 등)',
+    '흐름: 이 시퀀스에서 일어나는 일 2줄',
+    'S1 | 장소/상황 | 씬 내용 한 줄 | 10s | cinematic shot of ... (english)',
+    'S2 | 장소/상황 | 씬 내용 한 줄 | 8s | english prompt',
+    'S3 | 장소/상황 | 씬 내용 한 줄 | 12s | english prompt',
     '',
-    '[EP2] (동일 형식)',
-    '[EP3] (동일 형식)'
+    '[SEQ2] (동일 형식)',
+    '[SEQ3] (동일 형식)',
+    '...(전체 시퀀스 모두 작성)'
   ];
 
   try{
     var raw=await callClaude(lines.join(NL), 4000);
     clearInterval(timer);
-    currentTreatment={title:currentPlan.title,format:currentPlan.format,raw:raw};
+    currentTreatment={title:currentPlan.title,format:currentPlan.format,raw:raw,sequences:(currentPlan.sequences||currentPlan.episodes||[])};
     con.innerHTML=renderTreatment(raw, currentPlan.title);
     document.getElementById('script-btn').style.display='flex';
   }catch(e){
@@ -685,7 +693,7 @@ function renderTreatment(raw, title){
     if(isEPLine(line)){
       if(scenesOpen){html+='</div>';scenesOpen=false;}
       if(epOpen){html+='</div>';epOpen=false;}
-      html+='<div class="treatment-ep"><div class="ep-num">'+line+'</div>';
+      html+='<div class="treatment-ep"><div class="ep-num" style="color:var(--blue)">'+line+'</div>';
       epOpen=true;
     }else if(line.indexOf('흐름:')===0||line.indexOf('요약:')===0){
       var txt=line.slice(line.indexOf(':')+1).trim();
@@ -719,34 +727,74 @@ async function generateScript(){
   var timer=startTimer('script-timer','대본 작성 중...');
   sec.scrollIntoView({behavior:'smooth',block:'start'});
 
+  var scriptFmt=currentTreatment.format||'';
+  var genre=getChips('chips-genre').join(', ');
+
+  // 장르별 대본 방식 결정
+  var hasCharacter=genre.indexOf('드라마')>-1||genre.indexOf('예능')>-1||genre.indexOf('버라이어티')>-1
+    ||genre.indexOf('광고')>-1||genre.indexOf('모큐멘터리')>-1||genre.indexOf('역할')>-1
+    ||genre.indexOf('스토리')>-1||genre.indexOf('바이럴')>-1;
+
+  var voRule='';
+  if(scriptFmt.indexOf('숏폼')>-1) voRule='VO는 1~3문장. 짧고 임팩트 있게.';
+  else voRule='VO는 3~6문장. 실제 방송에서 읽을 완성된 문장.';
+
+  var dialogueRule='';
+  var scriptExample='';
+  if(hasCharacter){
+    dialogueRule='이 콘텐츠는 극중 인물이 등장해. 씬에 인물 대사가 있으면 반드시 CHARACTER 형식으로 써줘. VO는 나레이션이 있을 때만 써줘.';
+    scriptExample=[
+      '[SEQ1] 시퀀스 이름',
+      'S1',
+      '연출: 카메라워크와 분위기 설명',
+      'VO: 나레이션이 있을 경우에만. (없으면 이 줄 생략)',
+      'CHARACTER [인물이름]: 대사 내용을 자연스럽게 써줘.',
+      'CHARACTER [인물이름]: 상대방 대사.',
+      '자막: 핵심텍스트1, 핵심텍스트2',
+      '---',
+      'S2',
+      '연출: ...',
+      'CHARACTER [인물이름]: ...',
+      '자막: ...',
+      '---',
+    ].join(NL);
+  } else {
+    dialogueRule='이 콘텐츠는 나레이션 위주야. 모든 씬은 VO로 처리해줘.';
+    scriptExample=[
+      '[SEQ1] 시퀀스 이름',
+      'S1',
+      '연출: 카메라워크와 분위기 설명',
+      'VO: 첫 문장. 두 번째 문장. 세 번째 문장.',
+      '자막: 핵심텍스트1, 핵심텍스트2, 핵심텍스트3',
+      '---',
+      'S2 (동일 형식)',
+    ].join(NL);
+  }
+
   var lines=[
-    '유튜브 영상 대본을 작성해줘.',
+    '유튜브 영상 1편의 대본을 작성해줘.',
     '콘텐츠명: '+currentTreatment.title,
+    '포맷/길이: '+scriptFmt,
+    '장르: '+genre,
     '',
-    '아래 트리트먼트를 기반으로만 작성해. 새로운 에피소드 추가 절대 금지.',
-    '트리트먼트에 있는 씬(S1~S5)만 사용.',
+    dialogueRule,
+    '',
+    '아래 트리트먼트를 기반으로만 작성해. 새로운 시퀀스나 씬 추가 절대 금지.',
     '',
     '=== 트리트먼트 ===',
     currentTreatment.raw,
     '=================',
     '',
     '규칙:',
-    '1. 에피소드와 씬은 트리트먼트에 있는 것만 작성',
-    '2. 각 씬의 VO는 5~7문장. 실제 방송에서 읽을 완성된 문장.',
-    '3. 자막은 핵심 텍스트 3~5개를 쉼표로 구분',
+    '1. 시퀀스와 씬은 트리트먼트에 있는 것만 작성',
+    '2. '+voRule,
+    '3. 자막은 화면에 띄울 핵심 텍스트 3~5개를 쉼표로 구분',
     '4. 연출은 카메라워크, 분위기, 조명까지 구체적으로',
     '5. 마크다운 절대 사용 금지. 아래 형식만 사용.',
     '',
-    '[EP1] 에피소드 제목',
-    'S1',
-    '연출: 카메라워크와 분위기 설명',
-    'VO: 첫 문장. 두 번째 문장. 세 번째 문장. 네 번째 문장. 다섯 번째 문장.',
-    '자막: 핵심텍스트1, 핵심텍스트2, 핵심텍스트3',
-    '---',
-    'S2 (동일 형식)',
-    '',
-    '[EP2] (동일 형식)',
-    '[EP3] (동일 형식)'
+    scriptExample,
+    '[SEQ2] (동일 형식)',
+    '...(전체 시퀀스 모두 작성)'
   ];
 
   try{
@@ -770,7 +818,7 @@ function renderScript(raw, title){
     if(isEPLine(line)){
       if(sceneOpen){html+='</div>';sceneOpen=false;}
       if(epOpen){html+='</div>';epOpen=false;}
-      html+='<div class="script-ep"><div class="script-ep-num">'+line+'</div>';
+      html+='<div class="script-ep"><div class="script-ep-num" style="color:var(--purple)">'+line+'</div>';
       epOpen=true;
     }else if(isSceneHeader(line)){
       if(sceneOpen){html+='</div>';sceneOpen=false;}
@@ -783,6 +831,25 @@ function renderScript(raw, title){
       var sentences=txt.split('. ').filter(function(s){return s.trim();});
       html+='<div class="script-vo" style="line-height:2">'
         +sentences.map(function(s){return '<span style="display:block">'+(s.charAt(s.length-1)==='.'?s:s+'.')+'</span>';}).join('')
+        +'</div>';
+    }else if(line.indexOf('CHARACTER')===0){
+      // 인물 대사 파싱: CHARACTER [이름]: 대사 (정규식 없이 파싱)
+      var rest=line.slice(9).trim();
+      var charName='인물';
+      var charLine=rest;
+      var bStart=rest.indexOf('[');
+      var bEnd=rest.indexOf(']');
+      if(bStart>-1&&bEnd>bStart){
+        charName=rest.slice(bStart+1,bEnd);
+        var colonIdx=rest.indexOf(':',bEnd);
+        charLine=colonIdx>-1?rest.slice(colonIdx+1).trim():rest.slice(bEnd+1).trim();
+      } else if(rest.indexOf(':')>-1) {
+        charName=rest.slice(0,rest.indexOf(':')).trim();
+        charLine=rest.slice(rest.indexOf(':')+1).trim();
+      }
+      html+='<div style="display:flex;gap:10px;margin:6px 0;align-items:flex-start">'
+        +'<span style="background:#1a1a3a;border:1px solid var(--blue);color:#93c5fd;font-size:10px;font-family:JetBrains Mono,monospace;padding:2px 8px;border-radius:3px;white-space:nowrap;margin-top:2px">'+charName+'</span>'
+        +'<span style="font-size:13px;color:#f0f0f0;line-height:1.7;font-style:italic">"'+charLine+'"</span>'
         +'</div>';
     }else if(line.indexOf('자막:')===0){
       var tags=line.slice(3).trim().split(',').map(function(t){
@@ -827,7 +894,7 @@ async function generateAIPrompts(){
     '4. Negative: 피해야 할 요소 영어로 (20~30 words)',
     '5. 마크다운 없이 아래 형식만 사용.',
     '',
-    '[EP1] 에피소드 제목',
+    '[SEQ1] 시퀀스 이름',
     'S1 | 씬 내용 요약',
     'POS: cinematic shot, detailed english prompt ...',
     'NEG: blurry, low quality, ...',
@@ -835,8 +902,8 @@ async function generateAIPrompts(){
     'S2 | 씬 내용 요약',
     'POS: ...','NEG: ...',
     '',
-    '[EP2] (동일 형식)',
-    '[EP3] (동일 형식)'
+    '[SEQ2] (동일 형식)',
+    '...(전체 시퀀스 모두 작성)'
   ];
 
   try{
