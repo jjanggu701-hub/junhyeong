@@ -425,8 +425,25 @@ function parseJSON(raw, isArr){
   var cleaned=raw.split(bt+bt+bt+'json').join('').split(bt+bt+bt).join('').trim();
   var s=cleaned.indexOf(isArr?'[':'{');
   var e=cleaned.lastIndexOf(isArr?']':'}');
-  if(s===-1||e===-1) throw new Error('JSON을 찾을 수 없습니다');
-  return JSON.parse(cleaned.slice(s,e+1));
+  if(s===-1||e===-1) throw new Error('응답에서 JSON을 찾을 수 없습니다. 다시 시도해주세요.');
+  var jsonStr=cleaned.slice(s,e+1);
+  // 잘린 JSON 복구 시도
+  try{
+    return JSON.parse(jsonStr);
+  }catch(err){
+    // 배열이 잘린 경우: 마지막 완전한 객체까지만 파싱
+    if(isArr){
+      var lastComma=jsonStr.lastIndexOf('},');
+      if(lastComma>-1){
+        try{ return JSON.parse(jsonStr.slice(0,lastComma+1)+']'); }catch(e2){}
+      }
+      var lastBrace=jsonStr.lastIndexOf('}');
+      if(lastBrace>-1){
+        try{ return JSON.parse(jsonStr.slice(0,lastBrace+1)+']'); }catch(e3){}
+      }
+    }
+    throw new Error('JSON 파싱 오류: '+err.message+'. 다시 시도해주세요.');
+  }
 }
 
 // ── RENDER HELPERS ──
@@ -612,12 +629,13 @@ async function generate(){
     '포맷: '+fmt.join(', ')+' / 장르: '+allGenre.join(', ')+' / 타겟: '+(target.join(', ')||'10대~40대')+(keyword?' / 키워드: '+keyword:''),
     '포맷 규칙: '+getFormatRule(fmt),
     '',
-    'JSON 배열만 출력. 코드블록과 설명 없이.',
-    '[{"num":"01","title":"제목","desc":"컨셉2~3줄","diff":"상/중/하","growth":"★★★★☆"}]'
+    '반드시 JSON 배열만 출력. 앞뒤 설명, 코드블록, 마크다운 절대 금지. JSON만.',
+    '[{"num":"01","title":"제목","desc":"컨셉2~3줄","diff":"상/중/하","growth":"★★★★☆"}]',
+    '위 형식으로 정확히 '+count+'개를 배열로 출력해. 마지막 } 뒤에 반드시 ] 로 닫아줘.'
   ].join(NL);
 
   try{
-    var raw=await callAPI(prompt,2000);
+    var raw=await callAPI(prompt,4000);
     clearInterval(timer);
     var ideas=parseJSON(raw,true);
     document.getElementById('count-badge').textContent='총 '+ideas.length+'개';
