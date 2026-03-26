@@ -520,25 +520,39 @@ async function generateTreatment(){
   treatSection.scrollIntoView({behavior:'smooth',block:'start'});
 
   const epList=(currentPlan.episodes||[]).slice(0,3).map((e,i)=>'EP'+(i+1)+': '+e).join('\n');
-  const prompt='유튜브 콘텐츠 트리트먼트를 작성해줘.\n'
-    +'콘텐츠명: '+currentPlan.title+'\n포맷: '+currentPlan.format+'\n\n'
-    +'에피소드:\n'+epList+'\n\n'
-    +'각 에피소드는 5~6개 씬으로 구성해줘. 씬 하나당 예상 시간은 30초~1분 이내로 잡아줘.\n'
-    +'아래 형식 그대로 출력해줘. 마크다운 없이.\n\n'
-    +'[EP1] 에피소드 제목\n'
-    +'흐름: 전체 흐름 2~3줄\n'
-    +'S1 | 장소/상황 | 내용 한 줄 | 45s | AI prompt in english\n'
-    +'S2 | 장소/상황 | 내용 한 줄 | 30s | AI prompt in english\n'
-    +'S3 | 장소/상황 | 내용 한 줄 | 50s | AI prompt in english\n'
-    +'S4 | 장소/상황 | 내용 한 줄 | 40s | AI prompt in english\n'
-    +'S5 | 장소/상황 | 내용 한 줄 | 35s | AI prompt in english\n\n'
-    +'[EP2] ...(동일 형식)\n\n'
-    +'[EP3] ...(동일 형식)';
+
+  const prompt = [
+    '유튜브 영상 트리트먼트를 작성해줘.',
+    '콘텐츠명: '+currentPlan.title,
+    '포맷: '+currentPlan.format,
+    '',
+    '에피소드 목록:',
+    epList,
+    '',
+    '★ 규칙 (반드시 지켜줘):',
+    '1. 에피소드는 위 3개만 작성',
+    '2. 각 에피소드마다 씬을 정확히 5개 작성 (S1~S5)',
+    '3. 씬 하나당 예상시간은 20초~40초로 짧게',
+    '4. 마크다운(#, **, - 등) 절대 사용 금지',
+    '5. 아래 형식만 사용',
+    '',
+    '[EP1] 에피소드 제목',
+    '흐름: 전체 흐름을 2줄로 설명',
+    'S1 | 장소/상황 | 이 씬에서 벌어지는 일 한 줄 | 30s | cinematic shot of ... (english)',
+    'S2 | 장소/상황 | 이 씬에서 벌어지는 일 한 줄 | 25s | english ai prompt',
+    'S3 | 장소/상황 | 이 씬에서 벌어지는 일 한 줄 | 35s | english ai prompt',
+    'S4 | 장소/상황 | 이 씬에서 벌어지는 일 한 줄 | 30s | english ai prompt',
+    'S5 | 장소/상황 | 이 씬에서 벌어지는 일 한 줄 | 20s | english ai prompt',
+    '',
+    '[EP2] ...(동일 형식)',
+    '',
+    '[EP3] ...(동일 형식)'
+  ].join('\n');
 
   try{
     const raw=await callClaude(prompt,4000);
     clearInterval(timer);
-    currentTreatment={ title:currentPlan.title, raw:raw, format:currentPlan.format };
+    currentTreatment={ title:currentPlan.title, format:currentPlan.format, raw:raw };
     treatContainer.innerHTML=renderTreatment(raw, currentPlan.title);
     document.getElementById('script-btn').style.display='flex';
   }catch(e){
@@ -555,7 +569,7 @@ function renderTreatment(raw, title){
     +'<div style="font-size:12px;color:#93c5fd;margin-top:2px">Treatment</div></div>';
   let epOpen=false, scenesOpen=false;
   lines.forEach(function(line){
-    if(line.match(/^\[EP\d/) || line.match(/^EP\d+\s/)){
+    if(line.match(/^\[EP\d/) || (line.match(/^EP\d/) && line.length<40)){
       if(scenesOpen){ html+='</div>'; scenesOpen=false; }
       if(epOpen){ html+='</div>'; epOpen=false; }
       html+='<div class="treatment-ep"><div class="ep-num">'+line+'</div>';
@@ -567,11 +581,12 @@ function renderTreatment(raw, title){
     } else if(line.match(/^S\d+\s*\|/)){
       const parts=line.split('|').map(function(p){ return p.trim(); });
       html+='<div class="scene-item">'
-        +'<div class="scene-num">'+(parts[0]||'')+' &middot; '+(parts[1]||'')+(parts[3]?' &middot; <span style="color:var(--success)">'+parts[3]+'</span>':'')+'</div>'
+        +'<div class="scene-num">'+(parts[0]||'')+' &middot; '+(parts[1]||'')
+        +(parts[3]?' &middot; <span style="color:var(--success)">'+parts[3]+'</span>':'')+'</div>'
         +'<div class="scene-desc">'+(parts[2]||'')+'</div>'
         +(parts[4]?'<div style="font-size:10px;color:#60a5fa;margin-top:4px;font-family:JetBrains Mono,monospace">AI &rarr; '+parts[4]+'</div>':'')
         +'</div>';
-    } else if(epOpen && line.length>2){
+    } else if(epOpen && line.length>2 && !line.startsWith('[')){
       html+='<div style="font-size:12px;color:var(--muted);padding:3px 0">'+line+'</div>';
     }
   });
@@ -592,29 +607,42 @@ async function generateScript(){
   const timer=startTimer('script-timer','대본 작성 중...');
   scriptSection.scrollIntoView({behavior:'smooth',block:'start'});
 
-  const prompt='유튜브 영상 대본을 작성해줘.\n'
-    +'콘텐츠명: '+currentTreatment.title+'\n'
-    +'포맷: '+(currentTreatment.format||'')+'\n\n'
-    +'아래는 트리트먼트야:\n'+currentTreatment.raw+'\n\n'
-    +'각 씬마다 아래 형식으로 대본을 써줘. 씬 하나당 예상 분량만큼 충분히 써줘.\n'
-    +'보이스오버는 반드시 4~6문장 이상, 실제 방송에서 읽을 수 있는 완성된 문장으로 작성해.\n'
-    +'자막은 강조할 핵심 단어/문구 3~5개를 쉼표로 구분해서 써줘.\n'
-    +'마크다운 없이 아래 형식 그대로 출력해.\n\n'
-    +'[EP1] 에피소드 제목\n'
-    +'S1\n'
-    +'연출: 카메라/장소/분위기 설명\n'
-    +'VO: 나레이션 4~6문장. 각 문장은 완결된 형태로.\n'
-    +'자막: 핵심단어1, 핵심문구2, 강조텍스트3\n'
-    +'---\n'
-    +'S2\n'
-    +'연출: ...\n'
-    +'VO: ...\n'
-    +'자막: ...\n'
-    +'---\n\n'
-    +'EP2, EP3도 동일하게 작성해줘.';
+  const prompt = [
+    '유튜브 영상 대본을 작성해줘.',
+    '콘텐츠명: '+currentTreatment.title,
+    '',
+    '★ 아래 트리트먼트를 기반으로만 작성해. 새로운 에피소드 추가 금지.',
+    '★ 트리트먼트에 있는 씬(S1~S5)만 사용해.',
+    '',
+    '=== 트리트먼트 ===',
+    currentTreatment.raw,
+    '=================',
+    '',
+    '★ 규칙 (반드시 지켜줘):',
+    '1. 에피소드와 씬은 트리트먼트에 있는 것만 작성',
+    '2. 각 씬의 VO(보이스오버)는 반드시 5~7문장으로 작성. 실제 방송에서 읽을 완성된 문장.',
+    '3. 자막은 해당 씬에서 화면에 띄울 핵심 텍스트 3~5개를 쉼표로 구분',
+    '4. 연출은 카메라워크, 분위기, 조명까지 구체적으로',
+    '5. 마크다운 절대 사용 금지. 아래 형식만 사용.',
+    '',
+    '[EP1] 에피소드 제목',
+    'S1',
+    '연출: 카메라워크와 분위기 설명',
+    'VO: 첫 번째 문장. 두 번째 문장. 세 번째 문장. 네 번째 문장. 다섯 번째 문장. 여섯 번째 문장.',
+    '자막: 핵심텍스트1, 핵심텍스트2, 핵심텍스트3',
+    '---',
+    'S2',
+    '연출: ...',
+    'VO: ...',
+    '자막: ...',
+    '---',
+    '',
+    '[EP2] ...(동일 형식)',
+    '[EP3] ...(동일 형식)'
+  ].join('\n');
 
   try{
-    const raw=await callClaude(prompt,5000);
+    const raw=await callClaude(prompt,6000);
     clearInterval(timer);
     scriptContainer.innerHTML=renderScript(raw, currentTreatment.title);
   }catch(e){
@@ -629,37 +657,37 @@ function renderScript(raw, title){
   let html='<div class="script-doc">'
     +'<div class="script-header"><div class="script-title">'+title+'</div>'
     +'<div style="font-size:12px;color:#d8b4fe;margin-top:2px">Script — 보이스오버 + 자막 + 연출</div></div>';
-
   let epOpen=false, sceneOpen=false;
-
   lines.forEach(function(line){
-    if(line===('---') || line===('–––')){ return; }
-    if(line.match(/^\[EP\d/) || line.match(/^EP\d+\s/)){
+    if(line==='---' || line==='–––' || line==='---'){ return; }
+    if(line.match(/^\[EP\d/) || (line.match(/^EP\d/) && line.length<40)){
       if(sceneOpen){ html+='</div>'; sceneOpen=false; }
       if(epOpen){ html+='</div>'; epOpen=false; }
       html+='<div class="script-ep"><div class="script-ep-num">'+line+'</div>';
       epOpen=true;
     } else if(line.match(/^S\d+$/) || line.match(/^씬\s*\d+$/)){
       if(sceneOpen){ html+='</div>'; sceneOpen=false; }
-      html+='<div class="script-block"><div class="script-direction" style="color:var(--accent);font-size:12px;margin-bottom:6px">'+line+'</div>';
+      html+='<div class="script-block"><div style="font-family:JetBrains Mono,monospace;font-size:11px;color:var(--accent);margin-bottom:8px;letter-spacing:1px">'+line+'</div>';
       sceneOpen=true;
     } else if(line.startsWith('연출:')){
-      const txt=line.replace(/^연출:\s*/,'');
-      html+='<div class="script-direction">'+txt+'</div>';
+      html+='<div class="script-direction">'+line.replace(/^연출:\s*/,'')+'</div>';
     } else if(line.startsWith('VO:')){
       const txt=line.replace(/^VO:\s*/,'');
-      html+='<div class="script-vo" style="white-space:pre-wrap;line-height:1.9">'+txt+'</div>';
+      // 문장 단위로 줄바꿈
+      const sentences=txt.split(/(?<=[.!?])\s+/).filter(s=>s.trim());
+      html+='<div class="script-vo" style="line-height:2">'
+        +sentences.map(s=>'<span style="display:block">'+s+'</span>').join('')
+        +'</div>';
     } else if(line.startsWith('자막:')){
       const txt=line.replace(/^자막:\s*/,'');
       const tags=txt.split(',').map(function(t){
         return '<span style="background:#1a1a2a;border:1px solid var(--purple);color:#d8b4fe;font-size:11px;padding:2px 8px;border-radius:3px;margin:2px 3px;display:inline-block">'+t.trim()+'</span>';
       }).join('');
-      html+='<div class="script-caption" style="margin-top:8px;line-height:2">자막 &rarr; '+tags+'</div>';
-    } else if(sceneOpen && line.length>2){
+      html+='<div class="script-caption" style="margin-top:8px;line-height:2.2">자막 &rarr; '+tags+'</div>';
+    } else if((sceneOpen||epOpen) && line.length>2){
       html+='<div style="font-size:12px;color:var(--muted);padding:2px 0">'+line+'</div>';
     }
   });
-
   if(sceneOpen) html+='</div>';
   if(epOpen) html+='</div>';
   html+='</div>';
