@@ -521,21 +521,24 @@ async function generateTreatment(){
 
   const epList=(currentPlan.episodes||[]).slice(0,3).map((e,i)=>'EP'+(i+1)+': '+e).join('\n');
   const prompt='유튜브 콘텐츠 트리트먼트를 작성해줘.\n'
-    +'콘텐츠명: '+currentPlan.title+'\n\n'
+    +'콘텐츠명: '+currentPlan.title+'\n포맷: '+currentPlan.format+'\n\n'
     +'에피소드:\n'+epList+'\n\n'
-    +'각 에피소드마다 아래 형식 그대로 출력해줘. 마크다운 없이.\n\n'
+    +'각 에피소드는 5~6개 씬으로 구성해줘. 씬 하나당 예상 시간은 30초~1분 이내로 잡아줘.\n'
+    +'아래 형식 그대로 출력해줘. 마크다운 없이.\n\n'
     +'[EP1] 에피소드 제목\n'
-    +'흐름: 전체 흐름 2줄\n'
-    +'S1 | 장소 | 내용 한 줄 | 시간 | AI prompt in english\n'
-    +'S2 | 장소 | 내용 한 줄 | 시간 | AI prompt in english\n'
-    +'S3 | 장소 | 내용 한 줄 | 시간 | AI prompt in english\n\n'
+    +'흐름: 전체 흐름 2~3줄\n'
+    +'S1 | 장소/상황 | 내용 한 줄 | 45s | AI prompt in english\n'
+    +'S2 | 장소/상황 | 내용 한 줄 | 30s | AI prompt in english\n'
+    +'S3 | 장소/상황 | 내용 한 줄 | 50s | AI prompt in english\n'
+    +'S4 | 장소/상황 | 내용 한 줄 | 40s | AI prompt in english\n'
+    +'S5 | 장소/상황 | 내용 한 줄 | 35s | AI prompt in english\n\n'
     +'[EP2] ...(동일 형식)\n\n'
     +'[EP3] ...(동일 형식)';
 
   try{
-    const raw=await callClaude(prompt,3000);
+    const raw=await callClaude(prompt,4000);
     clearInterval(timer);
-    currentTreatment={ title:currentPlan.title, raw:raw };
+    currentTreatment={ title:currentPlan.title, raw:raw, format:currentPlan.format };
     treatContainer.innerHTML=renderTreatment(raw, currentPlan.title);
     document.getElementById('script-btn').style.display='flex';
   }catch(e){
@@ -550,25 +553,21 @@ function renderTreatment(raw, title){
   let html='<div class="treatment-doc">'
     +'<div class="treatment-header"><div class="treatment-title">'+title+'</div>'
     +'<div style="font-size:12px;color:#93c5fd;margin-top:2px">Treatment</div></div>';
-
-  let epOpen=false;
-  let scenesOpen=false;
-
+  let epOpen=false, scenesOpen=false;
   lines.forEach(function(line){
-    if(line.match(/^\[EP\d/) || line.match(/^EP\d+\]/)){
+    if(line.match(/^\[EP\d/) || line.match(/^EP\d+\s/)){
       if(scenesOpen){ html+='</div>'; scenesOpen=false; }
       if(epOpen){ html+='</div>'; epOpen=false; }
       html+='<div class="treatment-ep"><div class="ep-num">'+line+'</div>';
       epOpen=true;
     } else if(line.startsWith('흐름:') || line.startsWith('요약:')){
       const txt=line.replace(/^(흐름|요약):\s*/,'');
-      html+='<div class="ep-body">'+txt+'</div>';
-      html+='<div class="ep-scenes">';
+      html+='<div class="ep-body">'+txt+'</div><div class="ep-scenes">';
       scenesOpen=true;
     } else if(line.match(/^S\d+\s*\|/)){
       const parts=line.split('|').map(function(p){ return p.trim(); });
       html+='<div class="scene-item">'
-        +'<div class="scene-num">'+(parts[0]||'')+' &middot; '+(parts[1]||'')+(parts[3]?' &middot; '+parts[3]:'')+'</div>'
+        +'<div class="scene-num">'+(parts[0]||'')+' &middot; '+(parts[1]||'')+(parts[3]?' &middot; <span style="color:var(--success)">'+parts[3]+'</span>':'')+'</div>'
         +'<div class="scene-desc">'+(parts[2]||'')+'</div>'
         +(parts[4]?'<div style="font-size:10px;color:#60a5fa;margin-top:4px;font-family:JetBrains Mono,monospace">AI &rarr; '+parts[4]+'</div>':'')
         +'</div>';
@@ -576,7 +575,6 @@ function renderTreatment(raw, title){
       html+='<div style="font-size:12px;color:var(--muted);padding:3px 0">'+line+'</div>';
     }
   });
-
   if(scenesOpen) html+='</div>';
   if(epOpen) html+='</div>';
   html+='</div>';
@@ -594,36 +592,78 @@ async function generateScript(){
   const timer=startTimer('script-timer','대본 작성 중...');
   scriptSection.scrollIntoView({behavior:'smooth',block:'start'});
 
-  const epSummary=(currentTreatment.episodes||[]).map(ep=>ep.num+': '+ep.title+' ('+ep.summary.slice(0,40)+'...)').join('\n');
-  const prompt='너는 유튜브 콘텐츠 작가야. 아래 트리트먼트로 대본을 JSON으로 작성해줘.\n'
-    +'콘텐츠명: '+currentTreatment.title+'\n\n에피소드 목록:\n'+epSummary+'\n\n'
-    +'각 에피소드의 씬마다 연출지시, 보이스오버, 화면자막을 작성해줘. JSON만 출력. 코드블록·설명 없이.\n'
-    +'{"title":"","episodes":[{"num":"EP1","title":"","scenes":[{"num":"S1","direction":"연출지시","voiceover":"나레이션 텍스트","caption":"화면 자막"}]}]}';
+  const prompt='유튜브 영상 대본을 작성해줘.\n'
+    +'콘텐츠명: '+currentTreatment.title+'\n'
+    +'포맷: '+(currentTreatment.format||'')+'\n\n'
+    +'아래는 트리트먼트야:\n'+currentTreatment.raw+'\n\n'
+    +'각 씬마다 아래 형식으로 대본을 써줘. 씬 하나당 예상 분량만큼 충분히 써줘.\n'
+    +'보이스오버는 반드시 4~6문장 이상, 실제 방송에서 읽을 수 있는 완성된 문장으로 작성해.\n'
+    +'자막은 강조할 핵심 단어/문구 3~5개를 쉼표로 구분해서 써줘.\n'
+    +'마크다운 없이 아래 형식 그대로 출력해.\n\n'
+    +'[EP1] 에피소드 제목\n'
+    +'S1\n'
+    +'연출: 카메라/장소/분위기 설명\n'
+    +'VO: 나레이션 4~6문장. 각 문장은 완결된 형태로.\n'
+    +'자막: 핵심단어1, 핵심문구2, 강조텍스트3\n'
+    +'---\n'
+    +'S2\n'
+    +'연출: ...\n'
+    +'VO: ...\n'
+    +'자막: ...\n'
+    +'---\n\n'
+    +'EP2, EP3도 동일하게 작성해줘.';
 
   try{
-    const raw=await callClaude(prompt,4000);
+    const raw=await callClaude(prompt,5000);
     clearInterval(timer);
-    const s=extractJSON(raw,false);
-
-    let html='<div class="script-doc"><div class="script-header"><div class="script-title">'+s.title+'</div><div style="font-size:12px;color:#d8b4fe;margin-top:2px">Script — 보이스오버 + 자막 + 연출</div></div>';
-    (s.episodes||[]).forEach(ep=>{
-      html+='<div class="script-ep"><div class="script-ep-num">'+ep.num+'</div><div class="script-ep-title">'+ep.title+'</div>';
-      (ep.scenes||[]).forEach(sc=>{
-        html+='<div class="script-block">'
-          +'<div class="script-direction">'+sc.num+' · '+sc.direction+'</div>'
-          +(sc.voiceover?'<div class="script-vo">VO: '+sc.voiceover+'</div>':'')
-          +(sc.caption?'<div class="script-caption">CAPTION: '+sc.caption+'</div>':'')
-          +'</div>';
-      });
-      html+='</div>';
-    });
-    html+='</div>';
-    scriptContainer.innerHTML=html;
+    scriptContainer.innerHTML=renderScript(raw, currentTreatment.title);
   }catch(e){
     clearInterval(timer);
     scriptContainer.innerHTML='<div class="error-box">대본 오류: '+e.message
-      +'<br><br><button class="retry-btn" onclick="generateScript()">🔄 다시 시도</button></div>';
+      +'<br><br><button class="retry-btn" onclick="generateScript()">다시 시도</button></div>';
   }
+}
+
+function renderScript(raw, title){
+  const lines=raw.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+  let html='<div class="script-doc">'
+    +'<div class="script-header"><div class="script-title">'+title+'</div>'
+    +'<div style="font-size:12px;color:#d8b4fe;margin-top:2px">Script — 보이스오버 + 자막 + 연출</div></div>';
+
+  let epOpen=false, sceneOpen=false;
+
+  lines.forEach(function(line){
+    if(line===('---') || line===('–––')){ return; }
+    if(line.match(/^\[EP\d/) || line.match(/^EP\d+\s/)){
+      if(sceneOpen){ html+='</div>'; sceneOpen=false; }
+      if(epOpen){ html+='</div>'; epOpen=false; }
+      html+='<div class="script-ep"><div class="script-ep-num">'+line+'</div>';
+      epOpen=true;
+    } else if(line.match(/^S\d+$/) || line.match(/^씬\s*\d+$/)){
+      if(sceneOpen){ html+='</div>'; sceneOpen=false; }
+      html+='<div class="script-block"><div class="script-direction" style="color:var(--accent);font-size:12px;margin-bottom:6px">'+line+'</div>';
+      sceneOpen=true;
+    } else if(line.startsWith('연출:')){
+      const txt=line.replace(/^연출:\s*/,'');
+      html+='<div class="script-direction">'+txt+'</div>';
+    } else if(line.startsWith('VO:')){
+      const txt=line.replace(/^VO:\s*/,'');
+      html+='<div class="script-vo" style="white-space:pre-wrap;line-height:1.9">'+txt+'</div>';
+    } else if(line.startsWith('자막:')){
+      const txt=line.replace(/^자막:\s*/,'');
+      const tags=txt.split(',').map(function(t){
+        return '<span style="background:#1a1a2a;border:1px solid var(--purple);color:#d8b4fe;font-size:11px;padding:2px 8px;border-radius:3px;margin:2px 3px;display:inline-block">'+t.trim()+'</span>';
+      }).join('');
+      html+='<div class="script-caption" style="margin-top:8px;line-height:2">자막 &rarr; '+tags+'</div>';
+    } else if(sceneOpen && line.length>2){
+      html+='<div style="font-size:12px;color:var(--muted);padding:2px 0">'+line+'</div>';
+    }
+  });
+
+  if(sceneOpen) html+='</div>';
+  if(epOpen) html+='</div>';
+  html+='</div>';
+  return html;
 }
 
 function planRow(k,v,list=false){
