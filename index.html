@@ -519,14 +519,17 @@ async function generateTreatment(){
   const timer=startTimer('treat-timer','트리트먼트 작성 중...');
   treatSection.scrollIntoView({behavior:'smooth',block:'start'});
  
-  const epList=(currentPlan.episodes||[]).map((e,i)=>'EP'+(i+1)+': '+e).join(', ');
-  const prompt='너는 유튜브 콘텐츠 PD야. 아래 기획서 기반으로 트리트먼트를 JSON으로 작성해줘.\n'
-    +'콘텐츠명: '+currentPlan.title+'\n포맷: '+currentPlan.format+'\n에피소드: '+epList+'\n\n'
-    +'각 에피소드마다 씬을 4~5개씩 구성해줘. JSON만 출력. 코드블록·설명 없이.\n'
-    +'{"title":"","episodes":[{"num":"EP1","title":"","summary":"","scenes":[{"num":"S1","location":"","desc":"","duration":"","ai_prompt":""}]}]}';
+  // EP1~EP3만 먼저 생성 (토큰 절약)
+  const eps=(currentPlan.episodes||[]).slice(0,3);
+  const epList=eps.map((e,i)=>'EP'+(i+1)+': '+e).join(', ');
+  const prompt='아래 유튜브 에피소드 3개의 트리트먼트를 JSON으로만 작성해줘. 코드블록 없이 JSON만 출력해.'
+    +'\n콘텐츠명: '+currentPlan.title
+    +'\n에피소드: '+epList
+    +'\n\n규칙: 씬은 에피소드당 정확히 3개. 짧고 명확하게. JSON 반드시 완결.'
+    +'\n\n{"title":"제목","episodes":[{"num":"EP1","title":"","summary":"2줄요약","scenes":[{"num":"S1","location":"장소","desc":"내용 1줄","duration":"15s","ai_prompt":"short english"}]}]}';
  
   try{
-    const raw=await callClaude(prompt,3000);
+    const raw=await callClaude(prompt,4000);
     clearInterval(timer);
     const t=extractJSON(raw,false);
     currentTreatment=t;
