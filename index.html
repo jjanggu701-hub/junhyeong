@@ -149,6 +149,38 @@
   .tmpl-body{padding:14px 16px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);line-height:1.9;white-space:pre-wrap}
   .tmpl-body .v{color:var(--accent)}
 
+  /* AI 프롬프트 */
+  .prompt-doc{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+  .prompt-header{background:#0a1a0a;border-bottom:1px solid var(--border);padding:14px 18px}
+  .prompt-header-title{font-size:15px;font-weight:700;color:#4ade80;margin-bottom:3px}
+  .prompt-ep{border-bottom:1px solid var(--border);padding:16px 18px}
+  .prompt-ep:last-child{border-bottom:none}
+  .prompt-ep-num{font-family:'Bebas Neue',sans-serif;font-size:11px;color:var(--success);letter-spacing:1px;margin-bottom:6px}
+  .prompt-ep-title{font-size:14px;font-weight:500;margin-bottom:12px}
+  .prompt-scene{background:var(--bg);border:1px solid #1a3a1a;border-radius:8px;padding:12px 14px;margin-bottom:10px}
+  .prompt-scene-num{font-size:10px;color:var(--success);font-family:'JetBrains Mono',monospace;margin-bottom:6px;letter-spacing:1px}
+  .prompt-scene-desc{font-size:12px;color:var(--muted);margin-bottom:10px}
+  .prompt-box{background:#050f05;border:1px solid #2a4a2a;border-radius:6px;padding:10px 14px;position:relative}
+  .prompt-label{font-size:10px;color:#4ade80;font-family:'JetBrains Mono',monospace;letter-spacing:1px;margin-bottom:6px}
+  .prompt-text{font-size:12px;color:#86efac;font-family:'JetBrains Mono',monospace;line-height:1.8;word-break:break-all}
+  .prompt-copy-btn{position:absolute;top:8px;right:8px;background:#0a2a0a;border:1px solid #2a4a2a;color:#4ade80;font-size:10px;padding:3px 8px;border-radius:3px;cursor:pointer;font-family:'JetBrains Mono',monospace}
+  .prompt-copy-btn:hover{background:#1a4a1a}
+  .prompt-neg{background:#0f0505;border:1px solid #3a1a1a;border-radius:6px;padding:8px 14px;margin-top:6px}
+  .prompt-neg-text{font-size:11px;color:#fca5a5;font-family:'JetBrains Mono',monospace;line-height:1.7}
+
+  /* 썸네일 */
+  .thumb-doc{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+  .thumb-header{background:#1a0d0a;border-bottom:1px solid var(--border);padding:14px 18px}
+  .thumb-header-title{font-size:15px;font-weight:700;color:#fb923c;margin-bottom:3px}
+  .thumb-card{border-bottom:1px solid var(--border);padding:18px}
+  .thumb-card:last-child{border-bottom:none}
+  .thumb-card-num{font-family:'Bebas Neue',sans-serif;font-size:11px;color:#fb923c;letter-spacing:2px;margin-bottom:8px}
+  .thumb-card-concept{font-size:15px;font-weight:700;margin-bottom:14px}
+  .thumb-row{display:grid;grid-template-columns:90px 1fr;gap:8px;margin-bottom:8px;font-size:13px}
+  .thumb-key{color:var(--muted);font-size:11px;font-family:'JetBrains Mono',monospace;text-transform:uppercase;padding-top:1px}
+  .thumb-val{color:var(--text);line-height:1.7}
+  .thumb-copy-tag{display:inline-block;background:#1a0d05;border:1px solid #fb923c44;color:#fb923c;font-size:12px;font-weight:500;padding:4px 12px;border-radius:4px;margin-top:4px}
+
   ::-webkit-scrollbar{width:3px}
   ::-webkit-scrollbar-thumb{background:var(--muted2);border-radius:2px}
 </style>
@@ -283,6 +315,40 @@
             <button class="copy-btn" onclick="copyEl('script-container')">COPY</button>
           </div>
           <div id="script-container"></div>
+          <button class="next-step-btn" onclick="generateAIPrompts()" id="aiprompt-btn" style="display:none;border-color:#2a4a2a">
+            <span class="next-step-icon" style="background:var(--success);color:#000">STEP 05</span>
+            <div>
+              <div class="next-step-text">AI 영상 프롬프트 생성</div>
+              <div class="next-step-sub">Kling / Hailuo 씬별 영문 프롬프트 자동 생성</div>
+            </div>
+          </button>
+        </div>
+
+        <!-- STEP 05 AI 프롬프트 -->
+        <div id="aiprompt-section" style="display:none">
+          <div class="result-header">
+            <span class="result-badge" style="background:var(--success);color:#000">STEP 05</span>
+            <span class="result-title">AI 영상 프롬프트</span>
+            <button class="copy-btn" onclick="copyEl('aiprompt-container')">COPY ALL</button>
+          </div>
+          <div id="aiprompt-container"></div>
+          <button class="next-step-btn" onclick="generateThumbnail()" id="thumbnail-btn" style="display:none;border-color:#3a1a0a">
+            <span class="next-step-icon" style="background:#fb923c;color:#000">STEP 06</span>
+            <div>
+              <div class="next-step-text">썸네일 기획서 생성</div>
+              <div class="next-step-sub">레이아웃 · 카피 · 색감 방향 3안 제시</div>
+            </div>
+          </button>
+        </div>
+
+        <!-- STEP 06 썸네일 -->
+        <div id="thumbnail-section" style="display:none">
+          <div class="result-header">
+            <span class="result-badge" style="background:#fb923c;color:#000">STEP 06</span>
+            <span class="result-title">썸네일 기획서</span>
+            <button class="copy-btn" onclick="copyEl('thumbnail-container')">COPY</button>
+          </div>
+          <div id="thumbnail-container"></div>
         </div>
 
       </div>
@@ -645,6 +711,8 @@ async function generateScript(){
     const raw=await callClaude(prompt,6000);
     clearInterval(timer);
     scriptContainer.innerHTML=renderScript(raw, currentTreatment.title);
+    document.getElementById('aiprompt-btn').style.display='flex';
+    window._scriptRaw=raw;
   }catch(e){
     clearInterval(timer);
     scriptContainer.innerHTML='<div class="error-box">대본 오류: '+e.message
@@ -690,6 +758,224 @@ function renderScript(raw, title){
   });
   if(sceneOpen) html+='</div>';
   if(epOpen) html+='</div>';
+  html+='</div>';
+  return html;
+}
+
+// ─── STEP 05 AI 영상 프롬프트 ───
+async function generateAIPrompts(){
+  if(!currentTreatment){ alert('트리트먼트를 먼저 생성해주세요.'); return; }
+
+  const sec=document.getElementById('aiprompt-section');
+  const con=document.getElementById('aiprompt-container');
+  sec.style.display='block';
+  document.getElementById('thumbnail-btn').style.display='none';
+  document.getElementById('thumbnail-section').style.display='none';
+  con.innerHTML='<div class="loading-state"><div class="loader"></div><div class="loading-text" id="aip-timer">AI 프롬프트 생성 중... 0s</div></div>';
+  const timer=startTimer('aip-timer','AI 프롬프트 생성 중...');
+  sec.scrollIntoView({behavior:'smooth',block:'start'});
+
+  const prompt=[
+    'Kling과 Hailuo AI 영상 생성 툴용 프롬프트를 작성해줘.',
+    '콘텐츠명: '+currentTreatment.title,
+    '',
+    '아래 트리트먼트의 각 씬마다 프롬프트를 작성해줘.',
+    '',
+    '=== 트리트먼트 ===',
+    currentTreatment.raw,
+    '=================',
+    '',
+    '★ 규칙:',
+    '1. 트리트먼트에 있는 씬만 작성. 새 씬 추가 금지.',
+    '2. 각 씬마다 Positive Prompt와 Negative Prompt를 모두 작성.',
+    '3. Positive Prompt: 시각적 스타일, 카메라워크, 조명, 피사체, 분위기를 영어로 상세하게 (40~60 words)',
+    '4. Negative Prompt: 피해야 할 요소들을 영어로 (20~30 words)',
+    '5. 마크다운 없이 아래 형식만 사용.',
+    '',
+    '[EP1] 에피소드 제목',
+    'S1 | 씬 내용 요약',
+    'POS: cinematic shot, ... detailed english prompt ...',
+    'NEG: blurry, low quality, ...',
+    '',
+    'S2 | 씬 내용 요약',
+    'POS: ...',
+    'NEG: ...',
+    '',
+    '[EP2] ...(동일 형식)',
+    '[EP3] ...(동일 형식)'
+  ].join('
+');
+
+  try{
+    const raw=await callClaude(prompt,5000);
+    clearInterval(timer);
+    window._promptRaw=raw;
+    con.innerHTML=renderAIPrompts(raw, currentTreatment.title);
+    document.getElementById('thumbnail-btn').style.display='flex';
+  }catch(e){
+    clearInterval(timer);
+    con.innerHTML='<div class="error-box">프롬프트 오류: '+e.message
+      +'<br><br><button class="retry-btn" onclick="generateAIPrompts()">다시 시도</button></div>';
+  }
+}
+
+function renderAIPrompts(raw, title){
+  const lines=raw.split('
+').map(l=>l.trim()).filter(l=>l.length>0);
+  let html='<div class="prompt-doc">'
+    +'<div class="prompt-header"><div class="prompt-header-title">'+title+'</div>'
+    +'<div style="font-size:12px;color:#4ade80;margin-top:2px">AI Video Prompts — Kling / Hailuo</div></div>';
+
+  let epOpen=false, sceneOpen=false, posText='', negText='', sceneLabel='';
+
+  function flushScene(){
+    if(!sceneOpen) return;
+    let s='<div class="prompt-scene">'
+      +'<div class="prompt-scene-num">'+sceneLabel+'</div>';
+    if(posText){
+      const id='p'+Math.random().toString(36).slice(2,7);
+      s+='<div class="prompt-box">'
+        +'<div class="prompt-label">POSITIVE PROMPT</div>'
+        +'<div class="prompt-text" id="'+id+'">'+posText+'</div>'
+        +'<button class="prompt-copy-btn" onclick="copyText(''+id+'')">COPY</button>'
+        +'</div>';
+    }
+    if(negText){
+      s+='<div class="prompt-neg"><div class="prompt-label" style="color:#fca5a5;margin-bottom:4px">NEGATIVE PROMPT</div>'
+        +'<div class="prompt-neg-text">'+negText+'</div></div>';
+    }
+    s+='</div>';
+    html+=s;
+    posText=''; negText=''; sceneLabel=''; sceneOpen=false;
+  }
+
+  lines.forEach(function(line){
+    if(line.match(/^\[EP\d/) || (line.match(/^EP\d/) && line.length<40)){
+      flushScene();
+      if(epOpen) html+='</div>';
+      html+='<div class="prompt-ep"><div class="prompt-ep-num">'+line+'</div>';
+      epOpen=true;
+    } else if(line.match(/^S\d+\s*\|/)){
+      flushScene();
+      const parts=line.split('|').map(p=>p.trim());
+      sceneLabel=(parts[0]||'')+(parts[1]?' | '+parts[1]:'');
+      sceneOpen=true;
+    } else if(line.startsWith('POS:')){
+      posText=line.replace(/^POS:\s*/,'');
+    } else if(line.startsWith('NEG:')){
+      negText=line.replace(/^NEG:\s*/,'');
+    } else if(sceneOpen && posText && !negText && !line.startsWith('NEG:')){
+      posText+=' '+line;
+    }
+  });
+  flushScene();
+  if(epOpen) html+='</div>';
+  html+='</div>';
+  return html;
+}
+
+function copyText(id){
+  const el=document.getElementById(id);
+  if(!el) return;
+  navigator.clipboard.writeText(el.innerText).then(function(){
+    const btns=document.querySelectorAll('.prompt-copy-btn');
+    btns.forEach(function(b){
+      if(b.getAttribute('onclick')&&b.getAttribute('onclick').includes(id)){
+        b.textContent='COPIED!'; setTimeout(function(){ b.textContent='COPY'; },2000);
+      }
+    });
+  });
+}
+
+// ─── STEP 06 썸네일 기획서 ───
+async function generateThumbnail(){
+  if(!currentPlan){ alert('기획서를 먼저 생성해주세요.'); return; }
+
+  const sec=document.getElementById('thumbnail-section');
+  const con=document.getElementById('thumbnail-container');
+  sec.style.display='block';
+  con.innerHTML='<div class="loading-state"><div class="loader"></div><div class="loading-text" id="thumb-timer">썸네일 기획 중... 0s</div></div>';
+  const timer=startTimer('thumb-timer','썸네일 기획 중...');
+  sec.scrollIntoView({behavior:'smooth',block:'start'});
+
+  const prompt=[
+    '유튜브 썸네일 기획서를 3가지 안으로 작성해줘.',
+    '콘텐츠명: '+currentPlan.title,
+    '타겟: '+currentPlan.target,
+    '핵심 훅: '+currentPlan.hook,
+    '',
+    '★ 규칙: 마크다운 없이 아래 형식만 사용.',
+    '',
+    '[안 1] 컨셉 이름',
+    '레이아웃: 구성 요소와 배치 설명',
+    '메인비주얼: 주인공/배경/핵심 오브젝트 설명',
+    '카피: 메인 텍스트 | 서브 텍스트',
+    '색감: 주색상, 보조색상, 텍스트색상',
+    '감정훅: 이 썸네일이 유발하는 감정과 클릭 이유',
+    'PS작업: Photoshop 레이어 구성 및 작업 순서',
+    '',
+    '[안 2] ...(동일 형식)',
+    '[안 3] ...(동일 형식)'
+  ].join('
+');
+
+  try{
+    const raw=await callClaude(prompt,3000);
+    clearInterval(timer);
+    con.innerHTML=renderThumbnail(raw, currentPlan.title);
+  }catch(e){
+    clearInterval(timer);
+    con.innerHTML='<div class="error-box">썸네일 오류: '+e.message
+      +'<br><br><button class="retry-btn" onclick="generateThumbnail()">다시 시도</button></div>';
+  }
+}
+
+function renderThumbnail(raw, title){
+  const lines=raw.split('
+').map(l=>l.trim()).filter(l=>l.length>0);
+  const keyMap={'레이아웃':'레이아웃','메인비주얼':'메인비주얼','카피':'카피 텍스트','색감':'색감','감정훅':'감정 훅','PS작업':'Photoshop 작업'};
+  let html='<div class="thumb-doc">'
+    +'<div class="thumb-header"><div class="thumb-header-title">'+title+'</div>'
+    +'<div style="font-size:12px;color:#fb923c;margin-top:2px">Thumbnail Planning — 3안</div></div>';
+  let cardOpen=false;
+
+  lines.forEach(function(line){
+    if(line.match(/^\[안\s*\d/)){
+      if(cardOpen){ html+='</div>'; cardOpen=false; }
+      const concept=line.replace(/^\[안\s*\d+\]\s*/,'');
+      const num=line.match(/\d+/)?line.match(/\d+/)[0]:'';
+      html+='<div class="thumb-card"><div class="thumb-card-num">안 '+num+'</div>'
+        +'<div class="thumb-card-concept">'+concept+'</div>';
+      cardOpen=true;
+    } else if(cardOpen){
+      let matched=false;
+      Object.keys(keyMap).forEach(function(k){
+        if(line.startsWith(k+':')){
+          const val=line.replace(k+':\s*','').replace(k+':','').trim();
+          if(k==='카피'){
+            const parts=val.split('|').map(p=>p.trim());
+            html+='<div class="thumb-row"><div class="thumb-key">'+keyMap[k]+'</div>'
+              +'<div class="thumb-val">'
+              +(parts[0]?'<div class="thumb-copy-tag">'+parts[0]+'</div>':'')
+              +(parts[1]?'<span style="font-size:12px;color:var(--muted);margin-left:8px">'+parts[1]+'</span>':'')
+              +'</div></div>';
+          } else if(k==='색감'){
+            const colors=val.split(',').map(function(c){
+              return '<span style="display:inline-block;background:var(--surface2);border:1px solid var(--border);font-size:11px;padding:2px 8px;border-radius:3px;margin:2px 3px">'+c.trim()+'</span>';
+            }).join('');
+            html+='<div class="thumb-row"><div class="thumb-key">'+keyMap[k]+'</div><div class="thumb-val">'+colors+'</div></div>';
+          } else {
+            html+='<div class="thumb-row"><div class="thumb-key">'+keyMap[k]+'</div><div class="thumb-val">'+val+'</div></div>';
+          }
+          matched=true;
+        }
+      });
+      if(!matched && line.length>2){
+        html+='<div style="font-size:12px;color:var(--muted);padding:2px 0">'+line+'</div>';
+      }
+    }
+  });
+  if(cardOpen) html+='</div>';
   html+='</div>';
   return html;
 }
