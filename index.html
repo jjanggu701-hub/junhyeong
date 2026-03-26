@@ -9,12 +9,11 @@
   :root {
     --bg:#0a0a0a; --surface:#111; --surface2:#1a1a1a; --border:#2a2a2a;
     --accent:#ff3b3b; --accent2:#ff6b35; --text:#f0f0f0;
-    --muted:#666; --muted2:#444; --success:#2dce6e;
+    --muted:#666; --muted2:#444; --success:#2dce6e; --blue:#3b82f6; --purple:#a855f7;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;min-height:100vh;font-size:14px;line-height:1.6}
-
-  /* HEADER */
+ 
   header{border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;background:var(--bg);position:sticky;top:0;z-index:10}
   .logo{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:3px;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
   .logo-sub{font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;letter-spacing:1px;margin-left:10px;-webkit-text-fill-color:var(--muted)}
@@ -22,54 +21,53 @@
   .tab-btn{background:none;border:none;color:var(--muted);font-family:'Noto Sans KR',sans-serif;font-size:12px;padding:5px 14px;border-radius:4px;cursor:pointer;transition:all .2s}
   .tab-btn.active{background:var(--accent);color:white}
   .tab-btn:hover:not(.active){color:var(--text);background:var(--surface2)}
-
-  /* API KEY BAR */
+ 
   .api-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 24px;display:flex;align-items:center;gap:12px}
   .api-bar label{font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;white-space:nowrap}
   .api-bar input{flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:7px 12px;font-family:'JetBrains Mono',monospace;font-size:12px;outline:none;transition:border-color .2s}
   .api-bar input:focus{border-color:var(--accent)}
   .api-bar a{font-size:11px;color:var(--accent);text-decoration:none;white-space:nowrap;font-family:'JetBrains Mono',monospace}
-  .api-bar a:hover{text-decoration:underline}
   .key-status{font-size:10px;font-family:'JetBrains Mono',monospace;padding:3px 8px;border-radius:3px;white-space:nowrap}
   .key-status.ok{background:#0a2a0a;color:var(--success);border:1px solid #1a4a1a}
   .key-status.empty{background:#2a1a0a;color:#aaa;border:1px solid #3a2a0a}
-
-  /* LAYOUT */
+ 
   main{display:grid;grid-template-columns:280px 1fr;min-height:calc(100vh - 95px)}
   aside{border-right:1px solid var(--border);padding:18px;display:flex;flex-direction:column;gap:14px;background:var(--surface);overflow-y:auto;max-height:calc(100vh - 95px)}
   .section-title{font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;font-family:'JetBrains Mono',monospace;margin-bottom:6px}
-
+ 
   select,input[type="text"],textarea{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:8px 12px;font-family:'Noto Sans KR',sans-serif;font-size:13px;outline:none;transition:border-color .2s;appearance:none}
   select:focus,input:focus,textarea:focus{border-color:var(--accent)}
   textarea{resize:vertical;min-height:70px;line-height:1.6}
-
+ 
   .chip-group{display:flex;flex-wrap:wrap;gap:5px}
   .chip{background:var(--surface2);border:1px solid var(--border);color:var(--muted);font-size:11px;padding:4px 10px;border-radius:20px;cursor:pointer;transition:all .2s;user-select:none}
   .chip.active{background:var(--accent);border-color:var(--accent);color:white}
   .chip:hover:not(.active){border-color:var(--muted2);color:var(--text)}
-
+ 
   .generate-btn{background:var(--accent);color:white;border:none;border-radius:8px;padding:12px;font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:2px;cursor:pointer;transition:all .2s;width:100%;margin-top:auto}
   .generate-btn:hover{background:#e02020}
   .generate-btn:disabled{background:var(--muted2);cursor:not-allowed}
-
-  /* CONTENT */
+ 
   .content-area{padding:24px;overflow-y:auto;max-height:calc(100vh - 95px)}
   .tab-content{display:none}
   .tab-content.active{display:block}
-
+ 
   .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:400px;gap:12px;text-align:center}
   .empty-icon{font-size:44px;opacity:.2}
   .empty-state h3{font-size:17px;font-weight:500;color:var(--muted)}
   .empty-state p{font-size:13px;color:var(--muted2);max-width:260px;line-height:1.8}
-
+ 
   .result-section{margin-bottom:28px;animation:fadeIn .3s ease}
   @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
   .result-header{display:flex;align-items:center;gap:10px;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border)}
-  .result-badge{background:var(--accent);color:white;font-size:10px;font-family:'JetBrains Mono',monospace;letter-spacing:1px;padding:3px 9px;border-radius:3px}
-  .result-badge.green{background:var(--success)}
+  .result-badge{color:white;font-size:10px;font-family:'JetBrains Mono',monospace;letter-spacing:1px;padding:3px 9px;border-radius:3px}
+  .badge-red{background:var(--accent)}
+  .badge-green{background:var(--success)}
+  .badge-blue{background:var(--blue)}
+  .badge-purple{background:var(--purple)}
   .result-title{font-size:15px;font-weight:500}
   .count-badge{background:var(--surface2);border:1px solid var(--border);color:var(--muted);font-size:10px;font-family:'JetBrains Mono',monospace;padding:3px 9px;border-radius:3px;margin-left:auto}
-
+ 
   .idea-grid{display:grid;gap:10px}
   .idea-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;cursor:pointer;transition:all .2s;position:relative}
   .idea-card:hover{border-color:var(--accent)}
@@ -81,7 +79,8 @@
   .idea-meta{margin-top:8px;display:flex;gap:12px}
   .idea-meta span{font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace}
   .idea-meta span b{color:var(--text);font-weight:400}
-
+ 
+  /* 기획서 */
   .plan-doc{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden}
   .plan-doc-header{background:var(--surface2);border-bottom:1px solid var(--border);padding:14px 18px}
   .plan-doc-title{font-size:15px;font-weight:700;margin-bottom:3px}
@@ -93,31 +92,69 @@
   .plan-val ul{padding-left:14px}
   .plan-val li{margin-bottom:3px;color:var(--muted)}
   .plan-val li span{color:var(--text)}
-
+ 
+  /* 트리트먼트 */
+  .treatment-doc{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+  .treatment-header{background:#0d1a2a;border-bottom:1px solid var(--border);padding:14px 18px}
+  .treatment-title{font-size:15px;font-weight:700;margin-bottom:3px;color:#93c5fd}
+  .treatment-ep{background:var(--surface2);border-bottom:1px solid var(--border);padding:14px 18px}
+  .treatment-ep:last-child{border-bottom:none}
+  .ep-num{font-family:'Bebas Neue',sans-serif;font-size:11px;color:var(--blue);letter-spacing:1px;margin-bottom:4px}
+  .ep-title{font-size:14px;font-weight:500;margin-bottom:8px}
+  .ep-body{font-size:12px;color:var(--muted);line-height:1.8}
+  .ep-scenes{margin-top:10px;display:grid;gap:6px}
+  .scene-item{background:var(--bg);border-left:2px solid var(--blue);padding:8px 12px;border-radius:0 6px 6px 0}
+  .scene-num{font-size:10px;color:var(--blue);font-family:'JetBrains Mono',monospace;margin-bottom:2px}
+  .scene-desc{font-size:12px;color:var(--text);line-height:1.6}
+ 
+  /* 대본 */
+  .script-doc{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+  .script-header{background:#1a0d2a;border-bottom:1px solid var(--border);padding:14px 18px}
+  .script-title{font-size:15px;font-weight:700;margin-bottom:3px;color:#d8b4fe}
+  .script-ep{background:var(--surface2);border-bottom:1px solid var(--border);padding:14px 18px}
+  .script-ep:last-child{border-bottom:none}
+  .script-ep-num{font-family:'Bebas Neue',sans-serif;font-size:11px;color:var(--purple);letter-spacing:1px;margin-bottom:4px}
+  .script-ep-title{font-size:14px;font-weight:500;margin-bottom:12px}
+  .script-block{margin-bottom:12px}
+  .script-direction{font-size:11px;color:var(--blue);font-family:'JetBrains Mono',monospace;margin-bottom:3px;text-transform:uppercase;letter-spacing:1px}
+  .script-line{font-size:13px;line-height:1.8;color:var(--text)}
+  .script-vo{font-size:13px;line-height:1.8;color:#fcd34d;font-style:italic}
+  .script-caption{font-size:11px;color:var(--success);font-family:'JetBrains Mono',monospace;margin-top:4px}
+ 
+  /* 다음 단계 버튼 */
+  .next-step-btn{display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 18px;cursor:pointer;transition:all .2s;width:100%;margin-top:12px;text-align:left}
+  .next-step-btn:hover{border-color:var(--accent);background:#1a0808}
+  .next-step-btn.blue:hover{border-color:var(--blue);background:#0d1a2a}
+  .next-step-btn.purple:hover{border-color:var(--purple);background:#1a0d2a}
+  .next-step-icon{font-family:'Bebas Neue',sans-serif;font-size:11px;letter-spacing:1px;padding:4px 10px;border-radius:4px;white-space:nowrap}
+  .icon-blue{background:var(--blue);color:white}
+  .icon-purple{background:var(--purple);color:white}
+  .next-step-text{font-size:13px;font-weight:500}
+  .next-step-sub{font-size:11px;color:var(--muted);margin-top:2px}
+ 
   .copy-btn{background:var(--surface2);border:1px solid var(--border);color:var(--muted);font-size:10px;padding:4px 10px;border-radius:4px;cursor:pointer;font-family:'JetBrains Mono',monospace;transition:all .2s}
   .copy-btn:hover{border-color:var(--accent);color:var(--accent)}
-
-  .loading-state{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:220px;gap:14px}
+ 
+  .loading-state{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:200px;gap:14px}
   .loader{width:30px;height:30px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
   .loading-text{font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace}
-
+ 
   .error-box{background:#1a0505;border:1px solid #5a1010;border-radius:8px;padding:14px;color:#ff8080;font-size:13px;line-height:1.8}
   .retry-btn{margin-top:10px;background:var(--accent);color:white;border:none;padding:7px 16px;border-radius:5px;cursor:pointer;font-size:12px;font-family:'Noto Sans KR',sans-serif}
-
-  /* TEMPLATES */
+ 
   .tmpl-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:14px;overflow:hidden}
   .tmpl-header{padding:12px 16px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
   .tmpl-title{font-size:13px;font-weight:500}
   .tmpl-body{padding:14px 16px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);line-height:1.9;white-space:pre-wrap}
   .tmpl-body .v{color:var(--accent)}
-
+ 
   ::-webkit-scrollbar{width:3px}
   ::-webkit-scrollbar-thumb{background:var(--muted2);border-radius:2px}
 </style>
 </head>
 <body>
-
+ 
 <header>
   <div style="display:flex;align-items:center">
     <span class="logo">YPLAN</span><span class="logo-sub">YouTube 기획 자동화</span>
@@ -127,14 +164,14 @@
     <button class="tab-btn" onclick="switchTab('templates')">프롬프트 템플릿</button>
   </div>
 </header>
-
+ 
 <div class="api-bar">
   <label>API KEY</label>
   <input type="password" id="api-key" placeholder="sk-ant-api03-..." oninput="checkKey()" />
   <span class="key-status empty" id="key-status">미입력</span>
   <a href="https://console.anthropic.com/settings/keys" target="_blank">키 발급 →</a>
 </div>
-
+ 
 <main>
   <aside>
     <div>
@@ -184,7 +221,7 @@
     </div>
     <button class="generate-btn" id="gen-btn" onclick="generate()">⚡ 기획 자동 생성</button>
   </aside>
-
+ 
   <div class="content-area">
     <div class="tab-content active" id="tab-generator">
       <div class="empty-state" id="empty-state">
@@ -193,266 +230,386 @@
         <p>① API 키 입력<br>② 포맷·장르 선택<br>③ 생성 버튼 클릭</p>
       </div>
       <div id="result-area" style="display:none">
+ 
+        <!-- STEP 01 아이디어 -->
         <div class="result-section">
           <div class="result-header">
-            <span class="result-badge">STEP 01</span>
+            <span class="result-badge badge-red">STEP 01</span>
             <span class="result-title">아이디어 도출</span>
             <span class="count-badge" id="count-badge"></span>
           </div>
           <div class="idea-grid" id="ideas-container"></div>
         </div>
+ 
+        <!-- STEP 02 기획서 -->
         <div id="plan-section" style="display:none">
           <div class="result-header">
-            <span class="result-badge green">STEP 02</span>
-            <span class="result-title">기획서 자동 생성</span>
-            <button class="copy-btn" onclick="copyPlan()">COPY</button>
+            <span class="result-badge badge-green">STEP 02</span>
+            <span class="result-title">기획서</span>
+            <button class="copy-btn" onclick="copyEl('plan-container')">COPY</button>
           </div>
           <div id="plan-container"></div>
+          <button class="next-step-btn blue" onclick="generateTreatment()" id="treatment-btn" style="display:none">
+            <span class="next-step-icon icon-blue">STEP 03</span>
+            <div>
+              <div class="next-step-text">트리트먼트 생성하기</div>
+              <div class="next-step-sub">에피소드별 씬 구성 + 영상 흐름 설계</div>
+            </div>
+          </button>
         </div>
+ 
+        <!-- STEP 03 트리트먼트 -->
+        <div id="treatment-section" style="display:none">
+          <div class="result-header">
+            <span class="result-badge badge-blue">STEP 03</span>
+            <span class="result-title">트리트먼트</span>
+            <button class="copy-btn" onclick="copyEl('treatment-container')">COPY</button>
+          </div>
+          <div id="treatment-container"></div>
+          <button class="next-step-btn purple" onclick="generateScript()" id="script-btn" style="display:none">
+            <span class="next-step-icon icon-purple">STEP 04</span>
+            <div>
+              <div class="next-step-text">대본/스크립트 생성하기</div>
+              <div class="next-step-sub">보이스오버 + 자막 + 연출 지시까지</div>
+            </div>
+          </button>
+        </div>
+ 
+        <!-- STEP 04 대본 -->
+        <div id="script-section" style="display:none">
+          <div class="result-header">
+            <span class="result-badge badge-purple">STEP 04</span>
+            <span class="result-title">대본 / 스크립트</span>
+            <button class="copy-btn" onclick="copyEl('script-container')">COPY</button>
+          </div>
+          <div id="script-container"></div>
+        </div>
+ 
       </div>
     </div>
-
+ 
+    <!-- 템플릿 탭 -->
     <div class="tab-content" id="tab-templates">
       <div class="result-header" style="border:none;padding:0;margin-bottom:20px">
-        <span class="result-badge">TEMPLATES</span>
+        <span class="result-badge badge-red">TEMPLATES</span>
         <span class="result-title">Claude / ChatGPT 복붙 프롬프트</span>
       </div>
       <div class="tmpl-card">
         <div class="tmpl-header"><span class="tmpl-title">01 — 아이디어 도출</span><button class="copy-btn" onclick="copyTmpl('t1')">COPY</button></div>
         <div class="tmpl-body" id="t1">너는 최고의 유튜브 콘텐츠 PD야.
 아래 조건에 맞는 아이디어를 <span class="v">[개수]</span>개 도출해줘.
-
-포맷: <span class="v">[숏폼/롱폼]</span>
-장르: <span class="v">[장르]</span>
-타겟: <span class="v">[연령대]</span>
-키워드: <span class="v">[키워드]</span>
-
-각 아이디어:
-- 제목 / 핵심 컨셉 2줄 / 차별점 1줄
-- 제작 난이도 (상/중/하) / 성장 가능성 ★1~5</div>
+ 
+포맷: <span class="v">[숏폼/롱폼]</span> / 장르: <span class="v">[장르]</span>
+타겟: <span class="v">[연령대]</span> / 키워드: <span class="v">[키워드]</span>
+ 
+각 아이디어: 제목, 핵심컨셉2줄, 차별점, 난이도(상/중/하), 성장성★</div>
       </div>
       <div class="tmpl-card">
-        <div class="tmpl-header"><span class="tmpl-title">02 — 기획서 작성</span><button class="copy-btn" onclick="copyTmpl('t2')">COPY</button></div>
+        <div class="tmpl-header"><span class="tmpl-title">02 — 기획서</span><button class="copy-btn" onclick="copyTmpl('t2')">COPY</button></div>
         <div class="tmpl-body" id="t2">아래 아이디어로 유튜브 기획서를 작성해줘.
-
-콘텐츠명: <span class="v">[제목]</span>
-컨셉: <span class="v">[컨셉]</span>
-
-항목: 포맷/길이, 타겟, 첫3초훅,
-에피소드5개, 제작툴, 차별점,
-수익구조, 썸네일방향, 업로드주기</div>
+콘텐츠명: <span class="v">[제목]</span> / 컨셉: <span class="v">[컨셉]</span>
+ 
+항목: 포맷/길이, 타겟, 첫3초훅, 에피소드5개,
+제작툴, 차별점, 수익구조, 썸네일방향, 업로드주기</div>
       </div>
       <div class="tmpl-card">
-        <div class="tmpl-header"><span class="tmpl-title">03 — 썸네일 방향</span><button class="copy-btn" onclick="copyTmpl('t3')">COPY</button></div>
-        <div class="tmpl-body" id="t3">아래 콘텐츠 썸네일 방향을 3가지 안으로 제안해줘.
-
+        <div class="tmpl-header"><span class="tmpl-title">03 — 트리트먼트</span><button class="copy-btn" onclick="copyTmpl('t3')">COPY</button></div>
+        <div class="tmpl-body" id="t3">아래 기획서 기반으로 트리트먼트를 작성해줘.
 콘텐츠명: <span class="v">[제목]</span>
-타겟: <span class="v">[타겟]</span>
-
-각 안마다:
-레이아웃, 메인비주얼, 텍스트카피,
+에피소드 목록: <span class="v">[EP1~EP5]</span>
+ 
+각 에피소드마다:
+- 전체 흐름 요약 (3~4줄)
+- 씬 구성 (4~6개): 씬번호, 장소/상황, 주요내용, 예상시간
+- AI 영상 제작 포인트</div>
+      </div>
+      <div class="tmpl-card">
+        <div class="tmpl-header"><span class="tmpl-title">04 — 대본/스크립트</span><button class="copy-btn" onclick="copyTmpl('t4')">COPY</button></div>
+        <div class="tmpl-body" id="t4">아래 트리트먼트 기반으로 대본을 작성해줘.
+콘텐츠명: <span class="v">[제목]</span>
+에피소드: <span class="v">[EP번호 및 제목]</span>
+ 
+각 씬마다:
+- 연출 지시 (장소/분위기/카메라)
+- 보이스오버 나레이션
+- 화면 자막 텍스트
+- AI 영상 프롬프트 방향 (영어)</div>
+      </div>
+      <div class="tmpl-card">
+        <div class="tmpl-header"><span class="tmpl-title">05 — 썸네일 방향</span><button class="copy-btn" onclick="copyTmpl('t5')">COPY</button></div>
+        <div class="tmpl-body" id="t5">아래 콘텐츠 썸네일 방향을 3가지 안으로 제안해줘.
+콘텐츠명: <span class="v">[제목]</span> / 타겟: <span class="v">[타겟]</span>
+ 
+각 안: 레이아웃, 메인비주얼, 텍스트카피,
 감정유발포인트, Photoshop 작업 방향</div>
       </div>
       <div class="tmpl-card">
-        <div class="tmpl-header"><span class="tmpl-title">04 — AI 영상 제작 플랜</span><button class="copy-btn" onclick="copyTmpl('t4')">COPY</button></div>
-        <div class="tmpl-body" id="t4">아래 콘텐츠를 Kling/Hailuo로 제작하는 계획을 짜줘.
-
-콘텐츠명: <span class="v">[제목]</span>
-길이: <span class="v">[숏폼60초/롱폼5분]</span>
-
+        <div class="tmpl-header"><span class="tmpl-title">06 — AI 영상 제작 플랜</span><button class="copy-btn" onclick="copyTmpl('t6')">COPY</button></div>
+        <div class="tmpl-body" id="t6">아래 대본을 Kling/Hailuo로 제작하는 플랜을 짜줘.
+콘텐츠명: <span class="v">[제목]</span> / 길이: <span class="v">[시간]</span>
+ 
 출력: 씬분할(초배분), AI프롬프트(영어),
-보이스오버스크립트, 자막타이밍,
-BGM방향, After Effects 후작업</div>
-      </div>
-      <div class="tmpl-card">
-        <div class="tmpl-header"><span class="tmpl-title">05 — 트렌드 분석</span><button class="copy-btn" onclick="copyTmpl('t5')">COPY</button></div>
-        <div class="tmpl-body" id="t5"><span class="v">[장르]</span> 유튜브에서 잘 되는 콘텐츠 패턴을 분석해줘.
-
-항목: 유행포맷Top3, 공통훅구조,
-썸네일패턴, 타이틀공식,
-댓글유발요소, 선점가능한빈틈</div>
+BGM방향, After Effects 후작업 포인트</div>
       </div>
     </div>
   </div>
 </main>
-
+ 
 <script>
 const API_URL = 'https://api.anthropic.com/v1/messages';
-
-function getKey() { return document.getElementById('api-key').value.trim(); }
-
-function checkKey() {
-  const k = getKey();
-  const s = document.getElementById('key-status');
-  if (k.startsWith('sk-ant-')) {
-    s.textContent = '입력됨 ✓'; s.className = 'key-status ok';
-  } else {
-    s.textContent = '미입력'; s.className = 'key-status empty';
-  }
+let currentPlan = null;
+let currentTreatment = null;
+ 
+function getKey(){ return document.getElementById('api-key').value.trim(); }
+ 
+function checkKey(){
+  const k=getKey(), s=document.getElementById('key-status');
+  if(k.startsWith('sk-ant-')){ s.textContent='입력됨 ✓'; s.className='key-status ok'; }
+  else{ s.textContent='미입력'; s.className='key-status empty'; }
 }
-
-function switchTab(name) {
-  ['generator','templates'].forEach((t,i) => {
-    document.querySelectorAll('.tab-btn')[i].classList.toggle('active', t===name);
-    document.getElementById('tab-'+t).classList.toggle('active', t===name);
+ 
+function switchTab(name){
+  ['generator','templates'].forEach((t,i)=>{
+    document.querySelectorAll('.tab-btn')[i].classList.toggle('active',t===name);
+    document.getElementById('tab-'+t).classList.toggle('active',t===name);
   });
 }
-
-function toggleChip(el) { el.classList.toggle('active'); }
-function toggleCustom(el) {
+ 
+function toggleChip(el){ el.classList.toggle('active'); }
+function toggleCustom(el){
   el.classList.toggle('active');
-  document.getElementById('custom-wrap').style.display = el.classList.contains('active') ? 'block' : 'none';
+  document.getElementById('custom-wrap').style.display=el.classList.contains('active')?'block':'none';
 }
-function getChips(id) {
+function getChips(id){
   return Array.from(document.querySelectorAll('#'+id+' .chip.active')).map(c=>c.textContent).filter(t=>t!=='직접입력');
 }
-
-function startTimer(elId, prefix) {
-  let s = 0;
-  return setInterval(() => {
-    s++;
-    const el = document.getElementById(elId);
-    if (el) el.textContent = prefix + ' ' + s + 's';
-  }, 1000);
+ 
+function startTimer(elId,prefix){
+  let s=0;
+  return setInterval(()=>{ s++; const el=document.getElementById(elId); if(el) el.textContent=prefix+' '+s+'s'; },1000);
 }
-
-async function callClaude(prompt, maxTokens) {
-  const res = await fetch(API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': getKey(),
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true'
+ 
+async function callClaude(prompt,maxTokens){
+  const res=await fetch(API_URL,{
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'x-api-key':getKey(),
+      'anthropic-version':'2023-06-01',
+      'anthropic-dangerous-direct-browser-access':'true'
     },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: maxTokens,
-      messages: [{ role: 'user', content: prompt }]
-    })
+    body:JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:maxTokens, messages:[{role:'user',content:prompt}] })
   });
-  if (!res.ok) {
-    const e = await res.json().catch(()=>({}));
-    throw new Error(e.error?.message || 'API 오류 ' + res.status);
-  }
-  const data = await res.json();
+  if(!res.ok){ const e=await res.json().catch(()=>({})); throw new Error(e.error?.message||'API 오류 '+res.status); }
+  const data=await res.json();
   return data.content.filter(b=>b.type==='text').map(b=>b.text).join('');
 }
-
-function extractJSON(raw, isArray) {
-  const cleaned = raw.replace(/```json|```/g,'').trim();
-  const match = isArray ? cleaned.match(/\[[\s\S]*\]/) : cleaned.match(/\{[\s\S]*\}/);
-  if (!match) throw new Error('JSON 파싱 실패. 응답: ' + raw.slice(0,200));
+ 
+function extractJSON(raw,isArray){
+  const cleaned=raw.replace(/```json|```/g,'').trim();
+  const match=isArray?cleaned.match(/\[[\s\S]*\]/):cleaned.match(/\{[\s\S]*\}/);
+  if(!match) throw new Error('JSON 파싱 실패: '+raw.slice(0,200));
   return JSON.parse(match[0]);
 }
-
-async function generate() {
-  const key = getKey();
-  if (!key.startsWith('sk-ant-')) { alert('상단 API Key 입력란에 Anthropic API 키를 먼저 입력해주세요.'); return; }
-
-  const format = getChips('chips-format');
-  const genre = getChips('chips-genre');
-  const target = getChips('chips-target');
-  const custom = document.getElementById('custom-genre').value.trim();
-  const keyword = document.getElementById('keyword-input').value.trim();
-  const count = document.getElementById('idea-count').value;
-  const allGenre = [...genre, ...(custom?[custom]:[])];
-  if (!format.length || !allGenre.length) { alert('포맷과 장르를 최소 1개씩 선택해주세요.'); return; }
-
-  const btn = document.getElementById('gen-btn');
-  btn.disabled = true; btn.textContent = '생성 중...';
-  document.getElementById('empty-state').style.display = 'none';
-  document.getElementById('result-area').style.display = 'block';
-  document.getElementById('plan-section').style.display = 'none';
-
-  const container = document.getElementById('ideas-container');
-  container.innerHTML = '<div class="loading-state"><div class="loader"></div><div class="loading-text" id="idea-timer">아이디어 생성 중... 0s</div></div>';
-  const timer = startTimer('idea-timer', '아이디어 생성 중...');
-
-  const prompt = '너는 최고의 유튜브 콘텐츠 PD야. 아래 조건으로 아이디어 ' + count + '개를 만들어줘.\n'
-    + '포맷: ' + format.join(', ') + ' / 장르: ' + allGenre.join(', ') + ' / 타겟: ' + (target.join(', ')||'10대~40대') + (keyword?' / 키워드: '+keyword:'') + '\n\n'
-    + 'JSON 배열만 출력. 코드블록·설명 텍스트 없이.\n'
-    + '[{"num":"01","title":"제목","desc":"컨셉2~3줄","diff":"상/중/하","growth":"★★★★☆"}]';
-
-  try {
-    const raw = await callClaude(prompt, 2000);
+ 
+// ─── STEP 01 아이디어 ───
+async function generate(){
+  const key=getKey();
+  if(!key.startsWith('sk-ant-')){ alert('상단 API Key를 먼저 입력해주세요.'); return; }
+ 
+  const format=getChips('chips-format'), genre=getChips('chips-genre'), target=getChips('chips-target');
+  const custom=document.getElementById('custom-genre').value.trim();
+  const keyword=document.getElementById('keyword-input').value.trim();
+  const count=document.getElementById('idea-count').value;
+  const allGenre=[...genre,...(custom?[custom]:[])];
+  if(!format.length||!allGenre.length){ alert('포맷과 장르를 최소 1개씩 선택해주세요.'); return; }
+ 
+  const btn=document.getElementById('gen-btn');
+  btn.disabled=true; btn.textContent='생성 중...';
+  document.getElementById('empty-state').style.display='none';
+  document.getElementById('result-area').style.display='block';
+  ['plan-section','treatment-section','script-section'].forEach(id=>document.getElementById(id).style.display='none');
+  currentPlan=null; currentTreatment=null;
+ 
+  const container=document.getElementById('ideas-container');
+  container.innerHTML='<div class="loading-state"><div class="loader"></div><div class="loading-text" id="idea-timer">아이디어 생성 중... 0s</div></div>';
+  const timer=startTimer('idea-timer','아이디어 생성 중...');
+ 
+  const prompt='너는 최고의 유튜브 콘텐츠 PD야. 아래 조건으로 아이디어 '+count+'개를 만들어줘.\n'
+    +'포맷: '+format.join(', ')+' / 장르: '+allGenre.join(', ')+' / 타겟: '+(target.join(', ')||'10대~40대')+(keyword?' / 키워드: '+keyword:'')+'\n\n'
+    +'JSON 배열만 출력. 코드블록·설명 없이.\n'
+    +'[{"num":"01","title":"제목","desc":"컨셉2~3줄","diff":"상/중/하","growth":"★★★★☆"}]';
+ 
+  try{
+    const raw=await callClaude(prompt,2000);
     clearInterval(timer);
-    const ideas = extractJSON(raw, true);
-    document.getElementById('count-badge').textContent = '총 ' + ideas.length + '개';
-    container.innerHTML = '';
-    ideas.forEach((idea, i) => {
-      const card = document.createElement('div');
-      card.className = 'idea-card';
-      card.innerHTML =
-        '<div class="idea-num">IDEA ' + (idea.num||String(i+1).padStart(2,'0')) + '</div>'
-        + '<div class="idea-name">' + idea.title + '</div>'
-        + '<div class="idea-desc">' + idea.desc + '</div>'
-        + '<div class="idea-meta">'
-        + '<span>난이도: <b>' + idea.diff + '</b></span>'
-        + '<span style="color:#EF9F27">성장성: <b style="color:#EF9F27">' + idea.growth + '</b></span>'
-        + '</div>';
-      card.onclick = () => selectIdea(card, idea);
+    const ideas=extractJSON(raw,true);
+    document.getElementById('count-badge').textContent='총 '+ideas.length+'개';
+    container.innerHTML='';
+    ideas.forEach((idea,i)=>{
+      const card=document.createElement('div');
+      card.className='idea-card';
+      card.innerHTML='<div class="idea-num">IDEA '+(idea.num||String(i+1).padStart(2,'0'))+'</div>'
+        +'<div class="idea-name">'+idea.title+'</div>'
+        +'<div class="idea-desc">'+idea.desc+'</div>'
+        +'<div class="idea-meta"><span>난이도: <b>'+idea.diff+'</b></span>'
+        +'<span style="color:#EF9F27">성장성: <b style="color:#EF9F27">'+idea.growth+'</b></span></div>';
+      card.onclick=()=>selectIdea(card,idea);
       container.appendChild(card);
     });
-  } catch(e) {
+  }catch(e){
     clearInterval(timer);
-    container.innerHTML = '<div class="error-box">오류: ' + e.message
-      + '<br><br><button class="retry-btn" onclick="generate()">🔄 다시 시도</button></div>';
+    container.innerHTML='<div class="error-box">오류: '+e.message+'<br><br><button class="retry-btn" onclick="generate()">🔄 다시 시도</button></div>';
   }
-  btn.disabled = false; btn.textContent = '⚡ 기획 자동 생성';
+  btn.disabled=false; btn.textContent='⚡ 기획 자동 생성';
 }
-
-async function selectIdea(card, idea) {
+ 
+// ─── STEP 02 기획서 ───
+async function selectIdea(card,idea){
   document.querySelectorAll('.idea-card').forEach(c=>c.classList.remove('selected'));
   card.classList.add('selected');
-  window._lastIdea = idea;
-
-  const planSection = document.getElementById('plan-section');
-  const planContainer = document.getElementById('plan-container');
-  planSection.style.display = 'block';
+  window._lastIdea=idea;
+  ['treatment-section','script-section'].forEach(id=>document.getElementById(id).style.display='none');
+  currentPlan=null; currentTreatment=null;
+ 
+  const planSection=document.getElementById('plan-section');
+  const planContainer=document.getElementById('plan-container');
+  planSection.style.display='block';
+  document.getElementById('treatment-btn').style.display='none';
+  planContainer.innerHTML='<div class="loading-state"><div class="loader"></div><div class="loading-text" id="plan-timer">기획서 작성 중... 0s</div></div>';
+  const timer=startTimer('plan-timer','기획서 작성 중...');
   planSection.scrollIntoView({behavior:'smooth',block:'start'});
-
-  planContainer.innerHTML = '<div class="loading-state"><div class="loader"></div><div class="loading-text" id="plan-timer">기획서 작성 중... 0s</div></div>';
-  const timer = startTimer('plan-timer', '기획서 작성 중...');
-
-  const prompt = '너는 유튜브 콘텐츠 PD야. 아래 콘텐츠의 기획서를 JSON으로 작성해줘.\n'
-    + '콘텐츠명: ' + idea.title + '\n컨셉: ' + idea.desc + '\n\n'
-    + 'JSON만 출력. 코드블록·설명 없이.\n'
-    + '{"title":"","subtitle":"","format":"","target":"","hook":"","episodes":["","","","",""],"tools":"","diff":"","revenue":"","thumbnail":"","schedule":""}';
-
-  try {
-    const raw = await callClaude(prompt, 1500);
+ 
+  const prompt='너는 유튜브 콘텐츠 PD야. 아래 콘텐츠의 기획서를 JSON으로 작성해줘.\n'
+    +'콘텐츠명: '+idea.title+'\n컨셉: '+idea.desc+'\n\n'
+    +'JSON만 출력. 코드블록·설명 없이.\n'
+    +'{"title":"","subtitle":"","format":"","target":"","hook":"","episodes":["","","","",""],"tools":"","diff":"","revenue":"","thumbnail":"","schedule":""}';
+ 
+  try{
+    const raw=await callClaude(prompt,1500);
     clearInterval(timer);
-    const p = extractJSON(raw, false);
-    planContainer.innerHTML =
-      '<div class="plan-doc">'
-      + '<div class="plan-doc-header">'
-      + '<div class="plan-doc-title">' + (p.title||idea.title) + '</div>'
-      + '<div class="plan-doc-subtitle">' + (p.subtitle||'') + '</div>'
-      + '</div><div class="plan-doc-body">'
-      + row('FORMAT',p.format||'') + row('TARGET',p.target||'') + row('HOOK',p.hook||'')
-      + row('EPISODES',(p.episodes||[]).map((e,i)=>'<li><span>EP'+(i+1)+': '+e+'</span></li>').join(''),true)
-      + row('TOOLS',p.tools||'') + row('DIFF',p.diff||'') + row('REVENUE',p.revenue||'')
-      + row('THUMBNAIL',p.thumbnail||'') + row('SCHEDULE',p.schedule||'')
-      + '</div></div>';
-  } catch(e) {
+    const p=extractJSON(raw,false);
+    currentPlan=p;
+    planContainer.innerHTML='<div class="plan-doc">'
+      +'<div class="plan-doc-header"><div class="plan-doc-title">'+(p.title||idea.title)+'</div><div class="plan-doc-subtitle">'+(p.subtitle||'')+'</div></div>'
+      +'<div class="plan-doc-body">'
+      +planRow('FORMAT',p.format||'')+planRow('TARGET',p.target||'')+planRow('HOOK',p.hook||'')
+      +planRow('EPISODES',(p.episodes||[]).map((e,i)=>'<li><span>EP'+(i+1)+': '+e+'</span></li>').join(''),true)
+      +planRow('TOOLS',p.tools||'')+planRow('DIFF',p.diff||'')+planRow('REVENUE',p.revenue||'')
+      +planRow('THUMBNAIL',p.thumbnail||'')+planRow('SCHEDULE',p.schedule||'')
+      +'</div></div>';
+    document.getElementById('treatment-btn').style.display='flex';
+  }catch(e){
     clearInterval(timer);
-    planContainer.innerHTML = '<div class="error-box">기획서 오류: ' + e.message
-      + '<br><br><button class="retry-btn" onclick="selectIdea(document.querySelector(\'.idea-card.selected\'),window._lastIdea)">🔄 다시 시도</button></div>';
+    planContainer.innerHTML='<div class="error-box">기획서 오류: '+e.message
+      +'<br><br><button class="retry-btn" onclick="selectIdea(document.querySelector(\'.idea-card.selected\'),window._lastIdea)">🔄 다시 시도</button></div>';
   }
 }
-
-function row(k,v,list=false) {
+ 
+// ─── STEP 03 트리트먼트 ───
+async function generateTreatment(){
+  if(!currentPlan){ alert('기획서를 먼저 생성해주세요.'); return; }
+ 
+  const treatSection=document.getElementById('treatment-section');
+  const treatContainer=document.getElementById('treatment-container');
+  treatSection.style.display='block';
+  document.getElementById('script-btn').style.display='none';
+  document.getElementById('script-section').style.display='none';
+  treatContainer.innerHTML='<div class="loading-state"><div class="loader"></div><div class="loading-text" id="treat-timer">트리트먼트 작성 중... 0s</div></div>';
+  const timer=startTimer('treat-timer','트리트먼트 작성 중...');
+  treatSection.scrollIntoView({behavior:'smooth',block:'start'});
+ 
+  const epList=(currentPlan.episodes||[]).map((e,i)=>'EP'+(i+1)+': '+e).join(', ');
+  const prompt='너는 유튜브 콘텐츠 PD야. 아래 기획서 기반으로 트리트먼트를 JSON으로 작성해줘.\n'
+    +'콘텐츠명: '+currentPlan.title+'\n포맷: '+currentPlan.format+'\n에피소드: '+epList+'\n\n'
+    +'각 에피소드마다 씬을 4~5개씩 구성해줘. JSON만 출력. 코드블록·설명 없이.\n'
+    +'{"title":"","episodes":[{"num":"EP1","title":"","summary":"","scenes":[{"num":"S1","location":"","desc":"","duration":"","ai_prompt":""}]}]}';
+ 
+  try{
+    const raw=await callClaude(prompt,3000);
+    clearInterval(timer);
+    const t=extractJSON(raw,false);
+    currentTreatment=t;
+ 
+    let html='<div class="treatment-doc"><div class="treatment-header"><div class="treatment-title">'+t.title+'</div><div style="font-size:12px;color:#93c5fd;margin-top:2px">Treatment — 씬 구성표</div></div>';
+    (t.episodes||[]).forEach(ep=>{
+      html+='<div class="treatment-ep"><div class="ep-num">'+ep.num+'</div><div class="ep-title">'+ep.title+'</div><div class="ep-body">'+ep.summary+'</div><div class="ep-scenes">';
+      (ep.scenes||[]).forEach(sc=>{
+        html+='<div class="scene-item"><div class="scene-num">'+sc.num+' · '+sc.location+' · '+sc.duration+'</div>'
+          +'<div class="scene-desc">'+sc.desc+'</div>'
+          +(sc.ai_prompt?'<div style="font-size:10px;color:'+( '#60a5fa')+ ';margin-top:4px;font-family:JetBrains Mono,monospace">AI → '+sc.ai_prompt+'</div>':'')
+          +'</div>';
+      });
+      html+='</div></div>';
+    });
+    html+='</div>';
+    treatContainer.innerHTML=html;
+    document.getElementById('script-btn').style.display='flex';
+  }catch(e){
+    clearInterval(timer);
+    treatContainer.innerHTML='<div class="error-box">트리트먼트 오류: '+e.message
+      +'<br><br><button class="retry-btn" onclick="generateTreatment()">🔄 다시 시도</button></div>';
+  }
+}
+ 
+// ─── STEP 04 대본 ───
+async function generateScript(){
+  if(!currentTreatment){ alert('트리트먼트를 먼저 생성해주세요.'); return; }
+ 
+  const scriptSection=document.getElementById('script-section');
+  const scriptContainer=document.getElementById('script-container');
+  scriptSection.style.display='block';
+  scriptContainer.innerHTML='<div class="loading-state"><div class="loader"></div><div class="loading-text" id="script-timer">대본 작성 중... 0s</div></div>';
+  const timer=startTimer('script-timer','대본 작성 중...');
+  scriptSection.scrollIntoView({behavior:'smooth',block:'start'});
+ 
+  const epSummary=(currentTreatment.episodes||[]).map(ep=>ep.num+': '+ep.title+' ('+ep.summary.slice(0,40)+'...)').join('\n');
+  const prompt='너는 유튜브 콘텐츠 작가야. 아래 트리트먼트로 대본을 JSON으로 작성해줘.\n'
+    +'콘텐츠명: '+currentTreatment.title+'\n\n에피소드 목록:\n'+epSummary+'\n\n'
+    +'각 에피소드의 씬마다 연출지시, 보이스오버, 화면자막을 작성해줘. JSON만 출력. 코드블록·설명 없이.\n'
+    +'{"title":"","episodes":[{"num":"EP1","title":"","scenes":[{"num":"S1","direction":"연출지시","voiceover":"나레이션 텍스트","caption":"화면 자막"}]}]}';
+ 
+  try{
+    const raw=await callClaude(prompt,4000);
+    clearInterval(timer);
+    const s=extractJSON(raw,false);
+ 
+    let html='<div class="script-doc"><div class="script-header"><div class="script-title">'+s.title+'</div><div style="font-size:12px;color:#d8b4fe;margin-top:2px">Script — 보이스오버 + 자막 + 연출</div></div>';
+    (s.episodes||[]).forEach(ep=>{
+      html+='<div class="script-ep"><div class="script-ep-num">'+ep.num+'</div><div class="script-ep-title">'+ep.title+'</div>';
+      (ep.scenes||[]).forEach(sc=>{
+        html+='<div class="script-block">'
+          +'<div class="script-direction">'+sc.num+' · '+sc.direction+'</div>'
+          +(sc.voiceover?'<div class="script-vo">VO: '+sc.voiceover+'</div>':'')
+          +(sc.caption?'<div class="script-caption">CAPTION: '+sc.caption+'</div>':'')
+          +'</div>';
+      });
+      html+='</div>';
+    });
+    html+='</div>';
+    scriptContainer.innerHTML=html;
+  }catch(e){
+    clearInterval(timer);
+    scriptContainer.innerHTML='<div class="error-box">대본 오류: '+e.message
+      +'<br><br><button class="retry-btn" onclick="generateScript()">🔄 다시 시도</button></div>';
+  }
+}
+ 
+function planRow(k,v,list=false){
   return '<div class="plan-row"><div class="plan-key">'+k+'</div><div class="plan-val">'+(list?'<ul>'+v+'</ul>':v)+'</div></div>';
 }
-function copyPlan() {
-  navigator.clipboard.writeText(document.getElementById('plan-container').innerText).then(()=>{
-    const b=document.querySelector('#plan-section .copy-btn'); b.textContent='COPIED!'; setTimeout(()=>b.textContent='COPY',2000);
+ 
+function copyEl(id){
+  navigator.clipboard.writeText(document.getElementById(id).innerText).then(()=>{
+    const allBtns=document.querySelectorAll('.copy-btn');
+    allBtns.forEach(b=>{ if(b.getAttribute('onclick')&&b.getAttribute('onclick').includes(id)){ b.textContent='COPIED!'; setTimeout(()=>b.textContent='COPY',2000); } });
   });
 }
-function copyTmpl(id) {
+ 
+function copyTmpl(id){
   navigator.clipboard.writeText(document.getElementById(id).innerText).then(()=>{
-    const b=document.getElementById(id).closest('.tmpl-card').querySelector('.copy-btn'); b.textContent='COPIED!'; setTimeout(()=>b.textContent='COPY',2000);
+    const b=document.getElementById(id).closest('.tmpl-card').querySelector('.copy-btn');
+    b.textContent='COPIED!'; setTimeout(()=>b.textContent='COPY',2000);
   });
 }
 </script>
