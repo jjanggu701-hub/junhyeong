@@ -425,6 +425,7 @@ BGM방향, After Effects 후작업 포인트</div>
 const API_URL = 'https://api.anthropic.com/v1/messages';
 let currentPlan = null;
 let currentTreatment = null;
+const NL = '\n';
 
 function getKey(){ return document.getElementById('api-key').value.trim(); }
 
@@ -447,19 +448,21 @@ function toggleCustom(el){
   document.getElementById('custom-wrap').style.display=el.classList.contains('active')?'block':'none';
 }
 function getChips(id){
-  return Array.from(document.querySelectorAll('#'+id+' .chip.active')).map(function(c){return c.textContent;}).filter(function(t){return t!=='직접입력';});
+  return Array.from(document.querySelectorAll('#'+id+' .chip.active'))
+    .map(function(c){return c.textContent;})
+    .filter(function(t){return t!=='직접입력';});
 }
 
-function startTimer(elId,prefix){
+function startTimer(elId, prefix){
   var s=0;
   return setInterval(function(){
     s++;
     var el=document.getElementById(elId);
     if(el) el.textContent=prefix+' '+s+'s';
-  },1000);
+  }, 1000);
 }
 
-async function callClaude(prompt,maxTokens){
+async function callClaude(prompt, maxTokens){
   var res=await fetch(API_URL,{
     method:'POST',
     headers:{
@@ -470,40 +473,39 @@ async function callClaude(prompt,maxTokens){
     },
     body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:maxTokens,messages:[{role:'user',content:prompt}]})
   });
-  if(!res.ok){var e=await res.json().catch(function(){return{};});throw new Error(e.error?e.error.message:'API 오류 '+res.status);}
+  if(!res.ok){ var e=await res.json().catch(function(){return{};}); throw new Error(e.error?e.error.message:'API 오류 '+res.status); }
   var data=await res.json();
   return data.content.filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
 }
 
-function extractJSON(raw,isArray){
-  var cleaned=raw.replace(/```json|```/g,'').trim();
+function extractJSON(raw, isArray){
+  var cleaned=raw.split('JSONBLOCK').join('').split('CODEBLOCK').join('').trim();
   var start=cleaned.indexOf(isArray?'[':'{');
   var end=cleaned.lastIndexOf(isArray?']':'}');
-  if(start===-1||end===-1) throw new Error('JSON을 찾을 수 없습니다: '+raw.slice(0,200));
+  if(start===-1||end===-1) throw new Error('JSON을 찾을 수 없습니다');
   return JSON.parse(cleaned.slice(start,end+1));
 }
 
 function isEPLine(line){
-  return (line.charAt(0)==='[' && line.indexOf('EP')>-1 && line.indexOf(']')>-1) || (line.length<40 && line.indexOf('EP')===0 && line.length>2 && !isNaN(parseInt(line.charAt(2))));
+  return (line.charAt(0)==='['&&line.indexOf('EP')>-1&&line.indexOf(']')>-1)||
+    (line.length<40&&line.indexOf('EP')===0&&line.length>3&&!isNaN(parseInt(line.charAt(2))));
 }
 function isSceneLine(line){
   if(line.charAt(0)!=='S') return false;
-  var i=1;
-  while(i<line.length && !isNaN(parseInt(line.charAt(i)))) i++;
-  return i>1 && line.indexOf('|')>-1;
+  var i=1; while(i<line.length&&!isNaN(parseInt(line.charAt(i)))) i++;
+  return i>1&&line.indexOf('|')>-1;
 }
 function isSceneHeader(line){
   if(line.charAt(0)!=='S') return false;
-  var i=1;
-  while(i<line.length && !isNaN(parseInt(line.charAt(i)))) i++;
-  return i>1 && i===line.length;
+  var i=1; while(i<line.length&&!isNaN(parseInt(line.charAt(i)))) i++;
+  return i>1&&i===line.length;
 }
 
 // STEP 01
 async function generate(){
   var key=getKey();
   if(key.indexOf('sk-ant-')!==0){alert('상단 API Key를 먼저 입력해주세요.');return;}
-  var format=getChips('chips-format'),genre=getChips('chips-genre'),target=getChips('chips-target');
+  var format=getChips('chips-format'), genre=getChips('chips-genre'), target=getChips('chips-target');
   var custom=document.getElementById('custom-genre').value.trim();
   var keyword=document.getElementById('keyword-input').value.trim();
   var count=document.getElementById('idea-count').value;
@@ -514,22 +516,27 @@ async function generate(){
   btn.disabled=true; btn.textContent='생성 중...';
   document.getElementById('empty-state').style.display='none';
   document.getElementById('result-area').style.display='block';
-  ['plan-section','treatment-section','script-section','aiprompt-section','thumbnail-section'].forEach(function(id){document.getElementById(id).style.display='none';});
+  ['plan-section','treatment-section','script-section','aiprompt-section','thumbnail-section'].forEach(function(id){
+    document.getElementById(id).style.display='none';
+  });
   currentPlan=null; currentTreatment=null;
 
   var container=document.getElementById('ideas-container');
   container.innerHTML='<div class="loading-state"><div class="loader"></div><div class="loading-text" id="idea-timer">아이디어 생성 중... 0s</div></div>';
   var timer=startTimer('idea-timer','아이디어 생성 중...');
 
-  var prompt='너는 최고의 유튜브 콘텐츠 PD야. 아래 조건으로 아이디어 '+count+'개를 만들어줘.\n'
-    +'포맷: '+format.join(', ')+' / 장르: '+allGenre.join(', ')+' / 타겟: '+(target.join(', ')||'10대~40대')+(keyword?' / 키워드: '+keyword:'')+' \n\n'
-    +'JSON 배열만 출력. 코드블록과 설명 없이.\n'
-    +'[{"num":"01","title":"제목","desc":"컨셉2~3줄","diff":"상/중/하","growth":"★★★★☆"}]';
+  var lines=[
+    '너는 최고의 유튜브 콘텐츠 PD야. 아래 조건으로 아이디어 '+count+'개를 만들어줘.',
+    '포맷: '+format.join(', ')+' / 장르: '+allGenre.join(', ')+' / 타겟: '+(target.join(', ')||'10대~40대')+(keyword?' / 키워드: '+keyword:''),
+    '',
+    'JSON 배열만 출력. 코드블록과 설명 없이.',
+    '[{"num":"01","title":"제목","desc":"컨셉2~3줄","diff":"상/중/하","growth":"★★★★☆"}]'
+  ];
 
   try{
-    var raw=await callClaude(prompt,2000);
+    var raw=await callClaude(lines.join(NL), 2000);
     clearInterval(timer);
-    var ideas=extractJSON(raw,true);
+    var ideas=extractJSON(raw, true);
     document.getElementById('count-badge').textContent='총 '+ideas.length+'개';
     container.innerHTML='';
     ideas.forEach(function(idea,i){
@@ -551,11 +558,13 @@ async function generate(){
 }
 
 // STEP 02
-async function selectIdea(card,idea){
+async function selectIdea(card, idea){
   document.querySelectorAll('.idea-card').forEach(function(c){c.classList.remove('selected');});
   card.classList.add('selected');
   window._lastIdea=idea;
-  ['treatment-section','script-section','aiprompt-section','thumbnail-section'].forEach(function(id){document.getElementById(id).style.display='none';});
+  ['treatment-section','script-section','aiprompt-section','thumbnail-section'].forEach(function(id){
+    document.getElementById(id).style.display='none';
+  });
   currentPlan=null; currentTreatment=null;
 
   var planSection=document.getElementById('plan-section');
@@ -566,18 +575,23 @@ async function selectIdea(card,idea){
   var timer=startTimer('plan-timer','기획서 작성 중...');
   planSection.scrollIntoView({behavior:'smooth',block:'start'});
 
-  var prompt='너는 유튜브 콘텐츠 PD야. 아래 콘텐츠의 기획서를 JSON으로 작성해줘.\n'
-    +'콘텐츠명: '+idea.title+'\n컨셉: '+idea.desc+'\n\n'
-    +'JSON만 출력. 코드블록과 설명 없이.\n'
-    +'{"title":"","subtitle":"","format":"","target":"","hook":"","episodes":["","","","",""],"tools":"","diff":"","revenue":"","thumbnail":"","schedule":""}';
+  var lines=[
+    '너는 유튜브 콘텐츠 PD야. 아래 콘텐츠의 기획서를 JSON으로 작성해줘.',
+    '콘텐츠명: '+idea.title,
+    '컨셉: '+idea.desc,
+    '',
+    'JSON만 출력. 코드블록과 설명 없이.',
+    '{"title":"","subtitle":"","format":"","target":"","hook":"","episodes":["","","","",""],"tools":"","diff":"","revenue":"","thumbnail":"","schedule":""}'
+  ];
 
   try{
-    var raw=await callClaude(prompt,1500);
+    var raw=await callClaude(lines.join(NL), 1500);
     clearInterval(timer);
-    var p=extractJSON(raw,false);
+    var p=extractJSON(raw, false);
     currentPlan=p;
     planContainer.innerHTML='<div class="plan-doc">'
-      +'<div class="plan-doc-header"><div class="plan-doc-title">'+(p.title||idea.title)+'</div><div class="plan-doc-subtitle">'+(p.subtitle||'')+'</div></div>'
+      +'<div class="plan-doc-header"><div class="plan-doc-title">'+(p.title||idea.title)+'</div>'
+      +'<div class="plan-doc-subtitle">'+(p.subtitle||'')+'</div></div>'
       +'<div class="plan-doc-body">'
       +planRow('FORMAT',p.format||'')+planRow('TARGET',p.target||'')+planRow('HOOK',p.hook||'')
       +planRow('EPISODES',(p.episodes||[]).map(function(e,i){return '<li><span>EP'+(i+1)+': '+e+'</span></li>';}).join(''),true)
@@ -587,61 +601,67 @@ async function selectIdea(card,idea){
     document.getElementById('treatment-btn').style.display='flex';
   }catch(e){
     clearInterval(timer);
-    planContainer.innerHTML='<div class="error-box">기획서 오류: '+e.message
-      +'<br><br><button class="retry-btn" onclick="selectIdea(document.querySelector(\'.idea-card.selected\'),window._lastIdea)">다시 시도</button></div>';
+    planContainer.innerHTML='<div class="error-box">기획서 오류: '+e.message+'<br><br><button class="retry-btn" onclick="selectIdea(document.querySelector(\'.idea-card.selected\'),window._lastIdea)">다시 시도</button></div>';
   }
 }
 
 // STEP 03
 async function generateTreatment(){
   if(!currentPlan){alert('기획서를 먼저 생성해주세요.');return;}
-  var treatSection=document.getElementById('treatment-section');
-  var treatContainer=document.getElementById('treatment-container');
-  treatSection.style.display='block';
+  var sec=document.getElementById('treatment-section');
+  var con=document.getElementById('treatment-container');
+  sec.style.display='block';
   document.getElementById('script-btn').style.display='none';
   ['script-section','aiprompt-section','thumbnail-section'].forEach(function(id){document.getElementById(id).style.display='none';});
-  treatContainer.innerHTML='<div class="loading-state"><div class="loader"></div><div class="loading-text" id="treat-timer">트리트먼트 작성 중... 0s</div></div>';
+  con.innerHTML='<div class="loading-state"><div class="loader"></div><div class="loading-text" id="treat-timer">트리트먼트 작성 중... 0s</div></div>';
   var timer=startTimer('treat-timer','트리트먼트 작성 중...');
-  treatSection.scrollIntoView({behavior:'smooth',block:'start'});
+  sec.scrollIntoView({behavior:'smooth',block:'start'});
 
-  var epList=(currentPlan.episodes||[]).slice(0,3).map(function(e,i){return 'EP'+(i+1)+': '+e;}).join('\n');
-  var prompt=[
+  var epList=(currentPlan.episodes||[]).slice(0,3).map(function(e,i){return 'EP'+(i+1)+': '+e;}).join(NL);
+  var lines=[
     '유튜브 영상 트리트먼트를 작성해줘.',
     '콘텐츠명: '+currentPlan.title,
-    '포맷: '+currentPlan.format,'',
-    '에피소드 목록:', epList,'',
+    '포맷: '+currentPlan.format,
+    '',
+    '에피소드 목록:',
+    epList,
+    '',
     '규칙 (반드시 지켜줘):',
     '1. 에피소드는 위 3개만 작성',
     '2. 각 에피소드마다 씬을 정확히 5개 작성 (S1~S5)',
     '3. 씬 하나당 예상시간은 20초~40초',
     '4. 마크다운 절대 사용 금지',
-    '5. 아래 형식만 사용','',
+    '5. 아래 형식만 사용',
+    '',
     '[EP1] 에피소드 제목',
     '흐름: 전체 흐름을 2줄로 설명',
     'S1 | 장소/상황 | 씬 내용 한 줄 | 30s | cinematic shot of ... (english)',
     'S2 | 장소/상황 | 씬 내용 한 줄 | 25s | english prompt',
     'S3 | 장소/상황 | 씬 내용 한 줄 | 35s | english prompt',
     'S4 | 장소/상황 | 씬 내용 한 줄 | 30s | english prompt',
-    'S5 | 장소/상황 | 씬 내용 한 줄 | 20s | english prompt','',
-    '[EP2] (동일 형식)','[EP3] (동일 형식)'
-  ].join('\n');
+    'S5 | 장소/상황 | 씬 내용 한 줄 | 20s | english prompt',
+    '',
+    '[EP2] (동일 형식)',
+    '[EP3] (동일 형식)'
+  ];
 
   try{
-    var raw=await callClaude(prompt,4000);
+    var raw=await callClaude(lines.join(NL), 4000);
     clearInterval(timer);
     currentTreatment={title:currentPlan.title,format:currentPlan.format,raw:raw};
-    treatContainer.innerHTML=renderTreatment(raw,currentPlan.title);
+    con.innerHTML=renderTreatment(raw, currentPlan.title);
     document.getElementById('script-btn').style.display='flex';
   }catch(e){
     clearInterval(timer);
-    treatContainer.innerHTML='<div class="error-box">트리트먼트 오류: '+e.message+'<br><br><button class="retry-btn" onclick="generateTreatment()">다시 시도</button></div>';
+    con.innerHTML='<div class="error-box">트리트먼트 오류: '+e.message+'<br><br><button class="retry-btn" onclick="generateTreatment()">다시 시도</button></div>';
   }
 }
 
-function renderTreatment(raw,title){
-  var lines=raw.split('\n').map(function(l){return l.trim();}).filter(function(l){return l.length>0;});
-  var html='<div class="treatment-doc"><div class="treatment-header"><div class="treatment-title">'+title+'</div><div style="font-size:12px;color:#93c5fd;margin-top:2px">Treatment</div></div>';
-  var epOpen=false,scenesOpen=false;
+function renderTreatment(raw, title){
+  var lines=raw.split(NL).map(function(l){return l.trim();}).filter(function(l){return l.length>0;});
+  var html='<div class="treatment-doc"><div class="treatment-header"><div class="treatment-title">'+title+'</div>'
+    +'<div style="font-size:12px;color:#93c5fd;margin-top:2px">Treatment</div></div>';
+  var epOpen=false, scenesOpen=false;
   lines.forEach(function(line){
     if(isEPLine(line)){
       if(scenesOpen){html+='</div>';scenesOpen=false;}
@@ -649,7 +669,7 @@ function renderTreatment(raw,title){
       html+='<div class="treatment-ep"><div class="ep-num">'+line+'</div>';
       epOpen=true;
     }else if(line.indexOf('흐름:')===0||line.indexOf('요약:')===0){
-      var txt=line.indexOf('흐름:')===0?line.slice(3).trim():line.slice(3).trim();
+      var txt=line.slice(line.indexOf(':')+1).trim();
       html+='<div class="ep-body">'+txt+'</div><div class="ep-scenes">';
       scenesOpen=true;
     }else if(isSceneLine(line)){
@@ -665,62 +685,67 @@ function renderTreatment(raw,title){
   });
   if(scenesOpen)html+='</div>';
   if(epOpen)html+='</div>';
-  html+='</div>';
-  return html;
+  return html+'</div>';
 }
 
 // STEP 04
 async function generateScript(){
   if(!currentTreatment){alert('트리트먼트를 먼저 생성해주세요.');return;}
-  var scriptSection=document.getElementById('script-section');
-  var scriptContainer=document.getElementById('script-container');
-  scriptSection.style.display='block';
+  var sec=document.getElementById('script-section');
+  var con=document.getElementById('script-container');
+  sec.style.display='block';
   ['aiprompt-section','thumbnail-section'].forEach(function(id){document.getElementById(id).style.display='none';});
   document.getElementById('aiprompt-btn').style.display='none';
-  scriptContainer.innerHTML='<div class="loading-state"><div class="loader"></div><div class="loading-text" id="script-timer">대본 작성 중... 0s</div></div>';
+  con.innerHTML='<div class="loading-state"><div class="loader"></div><div class="loading-text" id="script-timer">대본 작성 중... 0s</div></div>';
   var timer=startTimer('script-timer','대본 작성 중...');
-  scriptSection.scrollIntoView({behavior:'smooth',block:'start'});
+  sec.scrollIntoView({behavior:'smooth',block:'start'});
 
-  var prompt=[
+  var lines=[
     '유튜브 영상 대본을 작성해줘.',
-    '콘텐츠명: '+currentTreatment.title,'',
+    '콘텐츠명: '+currentTreatment.title,
+    '',
     '아래 트리트먼트를 기반으로만 작성해. 새로운 에피소드 추가 절대 금지.',
-    '트리트먼트에 있는 씬(S1~S5)만 사용.','',
+    '트리트먼트에 있는 씬(S1~S5)만 사용.',
+    '',
     '=== 트리트먼트 ===',
     currentTreatment.raw,
-    '=================','',
-    '규칙 (반드시 지켜줘):',
+    '=================',
+    '',
+    '규칙:',
     '1. 에피소드와 씬은 트리트먼트에 있는 것만 작성',
-    '2. 각 씬의 VO는 반드시 5~7문장으로 작성. 실제 방송에서 읽을 완성된 문장.',
+    '2. 각 씬의 VO는 5~7문장. 실제 방송에서 읽을 완성된 문장.',
     '3. 자막은 핵심 텍스트 3~5개를 쉼표로 구분',
     '4. 연출은 카메라워크, 분위기, 조명까지 구체적으로',
-    '5. 마크다운 절대 사용 금지. 아래 형식만 사용.','',
+    '5. 마크다운 절대 사용 금지. 아래 형식만 사용.',
+    '',
     '[EP1] 에피소드 제목',
     'S1',
     '연출: 카메라워크와 분위기 설명',
     'VO: 첫 문장. 두 번째 문장. 세 번째 문장. 네 번째 문장. 다섯 번째 문장.',
     '자막: 핵심텍스트1, 핵심텍스트2, 핵심텍스트3',
     '---',
-    'S2 ... (동일 형식)','',
-    '[EP2] (동일 형식)','[EP3] (동일 형식)'
-  ].join('\n');
+    'S2 (동일 형식)',
+    '',
+    '[EP2] (동일 형식)',
+    '[EP3] (동일 형식)'
+  ];
 
   try{
-    var raw=await callClaude(prompt,6000);
+    var raw=await callClaude(lines.join(NL), 6000);
     clearInterval(timer);
-    window._scriptRaw=raw;
-    scriptContainer.innerHTML=renderScript(raw,currentTreatment.title);
+    con.innerHTML=renderScript(raw, currentTreatment.title);
     document.getElementById('aiprompt-btn').style.display='flex';
   }catch(e){
     clearInterval(timer);
-    scriptContainer.innerHTML='<div class="error-box">대본 오류: '+e.message+'<br><br><button class="retry-btn" onclick="generateScript()">다시 시도</button></div>';
+    con.innerHTML='<div class="error-box">대본 오류: '+e.message+'<br><br><button class="retry-btn" onclick="generateScript()">다시 시도</button></div>';
   }
 }
 
-function renderScript(raw,title){
-  var lines=raw.split('\n').map(function(l){return l.trim();}).filter(function(l){return l.length>0;});
-  var html='<div class="script-doc"><div class="script-header"><div class="script-title">'+title+'</div><div style="font-size:12px;color:#d8b4fe;margin-top:2px">Script — 보이스오버 + 자막 + 연출</div></div>';
-  var epOpen=false,sceneOpen=false;
+function renderScript(raw, title){
+  var lines=raw.split(NL).map(function(l){return l.trim();}).filter(function(l){return l.length>0;});
+  var html='<div class="script-doc"><div class="script-header"><div class="script-title">'+title+'</div>'
+    +'<div style="font-size:12px;color:#d8b4fe;margin-top:2px">Script — 보이스오버 + 자막 + 연출</div></div>';
+  var epOpen=false, sceneOpen=false;
   lines.forEach(function(line){
     if(line==='---')return;
     if(isEPLine(line)){
@@ -741,8 +766,7 @@ function renderScript(raw,title){
         +sentences.map(function(s){return '<span style="display:block">'+(s.charAt(s.length-1)==='.'?s:s+'.')+'</span>';}).join('')
         +'</div>';
     }else if(line.indexOf('자막:')===0){
-      var txt2=line.slice(3).trim();
-      var tags=txt2.split(',').map(function(t){
+      var tags=line.slice(3).trim().split(',').map(function(t){
         return '<span style="background:#1a1a2a;border:1px solid var(--purple);color:#d8b4fe;font-size:11px;padding:2px 8px;border-radius:3px;margin:2px 3px;display:inline-block">'+t.trim()+'</span>';
       }).join('');
       html+='<div class="script-caption" style="margin-top:8px;line-height:2.2">자막 → '+tags+'</div>';
@@ -752,8 +776,7 @@ function renderScript(raw,title){
   });
   if(sceneOpen)html+='</div>';
   if(epOpen)html+='</div>';
-  html+='</div>';
-  return html;
+  return html+'</div>';
 }
 
 // STEP 05
@@ -768,32 +791,39 @@ async function generateAIPrompts(){
   var timer=startTimer('aip-timer','AI 프롬프트 생성 중...');
   sec.scrollIntoView({behavior:'smooth',block:'start'});
 
-  var prompt=[
+  var lines=[
     'Kling, Hailuo, Hixfield AI 영상 생성 툴용 프롬프트를 작성해줘.',
-    '콘텐츠명: '+currentTreatment.title,'',
-    '아래 트리트먼트의 각 씬마다 프롬프트를 작성해줘.','',
+    '콘텐츠명: '+currentTreatment.title,
+    '',
+    '아래 트리트먼트의 각 씬마다 프롬프트를 작성해줘.',
+    '',
     '=== 트리트먼트 ===',
     currentTreatment.raw,
-    '=================','',
+    '=================',
+    '',
     '규칙:',
     '1. 트리트먼트에 있는 씬만 작성. 새 씬 추가 금지.',
     '2. 각 씬마다 Positive Prompt와 Negative Prompt 모두 작성.',
     '3. Positive: 시각적 스타일, 카메라워크, 조명, 피사체, 분위기 영어로 (40~60 words)',
     '4. Negative: 피해야 할 요소 영어로 (20~30 words)',
-    '5. 마크다운 없이 아래 형식만 사용.','',
+    '5. 마크다운 없이 아래 형식만 사용.',
+    '',
     '[EP1] 에피소드 제목',
     'S1 | 씬 내용 요약',
     'POS: cinematic shot, detailed english prompt ...',
     'NEG: blurry, low quality, ...',
+    '',
     'S2 | 씬 내용 요약',
-    'POS: ...','NEG: ...','',
-    '[EP2] (동일 형식)','[EP3] (동일 형식)'
-  ].join('\n');
+    'POS: ...','NEG: ...',
+    '',
+    '[EP2] (동일 형식)',
+    '[EP3] (동일 형식)'
+  ];
 
   try{
-    var raw=await callClaude(prompt,5000);
+    var raw=await callClaude(lines.join(NL), 5000);
     clearInterval(timer);
-    con.innerHTML=renderAIPrompts(raw,currentTreatment.title);
+    con.innerHTML=renderAIPrompts(raw, currentTreatment.title);
     document.getElementById('thumbnail-btn').style.display='flex';
   }catch(e){
     clearInterval(timer);
@@ -801,10 +831,11 @@ async function generateAIPrompts(){
   }
 }
 
-function renderAIPrompts(raw,title){
-  var lines=raw.split('\n').map(function(l){return l.trim();}).filter(function(l){return l.length>0;});
-  var html='<div class="prompt-doc"><div class="prompt-header"><div class="prompt-header-title">'+title+'</div><div style="font-size:12px;color:#4ade80;margin-top:2px">AI Video Prompts — Kling / Hailuo / Hixfield</div></div>';
-  var epOpen=false,posText='',negText='',sceneLabel='',sceneOpen=false;
+function renderAIPrompts(raw, title){
+  var lines=raw.split(NL).map(function(l){return l.trim();}).filter(function(l){return l.length>0;});
+  var html='<div class="prompt-doc"><div class="prompt-header"><div class="prompt-header-title">'+title+'</div>'
+    +'<div style="font-size:12px;color:#4ade80;margin-top:2px">AI Video Prompts — Kling / Hailuo / Hixfield</div></div>';
+  var epOpen=false, posText='', negText='', sceneLabel='', sceneOpen=false;
 
   function flushScene(){
     if(!sceneOpen)return;
@@ -813,13 +844,14 @@ function renderAIPrompts(raw,title){
     if(posText){
       s+='<div class="prompt-box"><div class="prompt-label">POSITIVE PROMPT</div>'
         +'<div class="prompt-text" id="'+id+'">'+posText+'</div>'
-        +'<button class="prompt-copy-btn" onclick="copyPrompt(''+id+'',this)">COPY</button></div>';
+        +'<button class="prompt-copy-btn" onclick="copyPrompt(\''+id+'\',this)">COPY</button></div>';
     }
     if(negText){
-      s+='<div class="prompt-neg"><div class="prompt-label" style="color:#fca5a5;margin-bottom:4px">NEGATIVE PROMPT</div><div class="prompt-neg-text">'+negText+'</div></div>';
+      s+='<div class="prompt-neg"><div class="prompt-label" style="color:#fca5a5;margin-bottom:4px">NEGATIVE PROMPT</div>'
+        +'<div class="prompt-neg-text">'+negText+'</div></div>';
     }
     html+=s+'</div>';
-    posText='';negText='';sceneLabel='';sceneOpen=false;
+    posText=''; negText=''; sceneLabel=''; sceneOpen=false;
   }
 
   lines.forEach(function(line){
@@ -843,11 +875,10 @@ function renderAIPrompts(raw,title){
   });
   flushScene();
   if(epOpen)html+='</div>';
-  html+='</div>';
-  return html;
+  return html+'</div>';
 }
 
-function copyPrompt(id,btn){
+function copyPrompt(id, btn){
   var el=document.getElementById(id);
   if(!el)return;
   navigator.clipboard.writeText(el.innerText).then(function(){
@@ -866,41 +897,45 @@ async function generateThumbnail(){
   var timer=startTimer('thumb-timer','썸네일 기획 중...');
   sec.scrollIntoView({behavior:'smooth',block:'start'});
 
-  var prompt=[
+  var lines=[
     '유튜브 썸네일 기획서를 3가지 안으로 작성해줘.',
     '콘텐츠명: '+currentPlan.title,
     '타겟: '+currentPlan.target,
-    '핵심 훅: '+currentPlan.hook,'',
-    '규칙: 마크다운 없이 아래 형식만 사용.','',
+    '핵심 훅: '+currentPlan.hook,
+    '',
+    '규칙: 마크다운 없이 아래 형식만 사용.',
+    '',
     '[안 1] 컨셉 이름',
     '레이아웃: 구성 요소와 배치 설명',
     '메인비주얼: 주인공/배경/핵심 오브젝트 설명',
     '카피: 메인 텍스트 | 서브 텍스트',
     '색감: 주색상, 보조색상, 텍스트색상',
     '감정훅: 이 썸네일이 유발하는 감정과 클릭 이유',
-    'PS작업: Photoshop 레이어 구성 및 작업 순서','',
-    '[안 2] (동일 형식)','[안 3] (동일 형식)'
-  ].join('\n');
+    'PS작업: Photoshop 레이어 구성 및 작업 순서',
+    '',
+    '[안 2] (동일 형식)',
+    '[안 3] (동일 형식)'
+  ];
 
   try{
-    var raw=await callClaude(prompt,3000);
+    var raw=await callClaude(lines.join(NL), 3000);
     clearInterval(timer);
-    con.innerHTML=renderThumbnail(raw,currentPlan.title);
+    con.innerHTML=renderThumbnail(raw, currentPlan.title);
   }catch(e){
     clearInterval(timer);
     con.innerHTML='<div class="error-box">썸네일 오류: '+e.message+'<br><br><button class="retry-btn" onclick="generateThumbnail()">다시 시도</button></div>';
   }
 }
 
-function renderThumbnail(raw,title){
-  var lines=raw.split('\n').map(function(l){return l.trim();}).filter(function(l){return l.length>0;});
+function renderThumbnail(raw, title){
+  var lines=raw.split(NL).map(function(l){return l.trim();}).filter(function(l){return l.length>0;});
   var keys=['레이아웃','메인비주얼','카피','색감','감정훅','PS작업'];
-  var keyLabels={레이아웃:'레이아웃',메인비주얼:'메인비주얼',카피:'카피 텍스트',색감:'색감',감정훅:'감정 훅',PS작업:'Photoshop 작업'};
-  var html='<div class="thumb-doc"><div class="thumb-header"><div class="thumb-header-title">'+title+'</div><div style="font-size:12px;color:#fb923c;margin-top:2px">Thumbnail Planning — 3안</div></div>';
+  var keyLabels={'레이아웃':'레이아웃','메인비주얼':'메인비주얼','카피':'카피 텍스트','색감':'색감','감정훅':'감정 훅','PS작업':'Photoshop 작업'};
+  var html='<div class="thumb-doc"><div class="thumb-header"><div class="thumb-header-title">'+title+'</div>'
+    +'<div style="font-size:12px;color:#fb923c;margin-top:2px">Thumbnail Planning — 3안</div></div>';
   var cardOpen=false;
   lines.forEach(function(line){
-    var isAn=line.indexOf('[안')===0&&line.indexOf(']')>-1;
-    if(isAn){
+    if(line.indexOf('[안')===0&&line.indexOf(']')>-1){
       if(cardOpen){html+='</div>';cardOpen=false;}
       var concept=line.slice(line.indexOf(']')+1).trim();
       var numStr=line.slice(1,line.indexOf(']')).replace('안','').trim();
@@ -918,7 +953,9 @@ function renderThumbnail(raw,title){
               +(parts[1]?'<span style="font-size:12px;color:var(--muted);margin-left:8px">'+parts[1]+'</span>':'')
               +'</div></div>';
           }else if(k==='색감'){
-            var colors=val.split(',').map(function(c){return '<span style="display:inline-block;background:var(--surface2);border:1px solid var(--border);font-size:11px;padding:2px 8px;border-radius:3px;margin:2px 3px">'+c.trim()+'</span>';}).join('');
+            var colors=val.split(',').map(function(c){
+              return '<span style="display:inline-block;background:var(--surface2);border:1px solid var(--border);font-size:11px;padding:2px 8px;border-radius:3px;margin:2px 3px">'+c.trim()+'</span>';
+            }).join('');
             html+='<div class="thumb-row"><div class="thumb-key">'+keyLabels[k]+'</div><div class="thumb-val">'+colors+'</div></div>';
           }else{
             html+='<div class="thumb-row"><div class="thumb-key">'+keyLabels[k]+'</div><div class="thumb-val">'+val+'</div></div>';
@@ -926,12 +963,13 @@ function renderThumbnail(raw,title){
           matched=true;
         }
       });
-      if(!matched&&line.length>2){html+='<div style="font-size:12px;color:var(--muted);padding:2px 0">'+line+'</div>';}
+      if(!matched&&line.length>2){
+        html+='<div style="font-size:12px;color:var(--muted);padding:2px 0">'+line+'</div>';
+      }
     }
   });
   if(cardOpen)html+='</div>';
-  html+='</div>';
-  return html;
+  return html+'</div>';
 }
 
 function planRow(k,v,list){
@@ -941,7 +979,7 @@ function copyEl(id){
   navigator.clipboard.writeText(document.getElementById(id).innerText).then(function(){
     document.querySelectorAll('.copy-btn').forEach(function(b){
       if(b.getAttribute('onclick')&&b.getAttribute('onclick').indexOf(id)>-1){
-        b.textContent='COPIED!';setTimeout(function(){b.textContent='COPY';},2000);
+        b.textContent='COPIED!'; setTimeout(function(){b.textContent='COPY';},2000);
       }
     });
   });
@@ -949,9 +987,10 @@ function copyEl(id){
 function copyTmpl(id){
   navigator.clipboard.writeText(document.getElementById(id).innerText).then(function(){
     var b=document.getElementById(id).closest('.tmpl-card').querySelector('.copy-btn');
-    b.textContent='COPIED!';setTimeout(function(){b.textContent='COPY';},2000);
+    b.textContent='COPIED!'; setTimeout(function(){b.textContent='COPY';},2000);
   });
 }
+
 </script>
 </body>
 </html>
