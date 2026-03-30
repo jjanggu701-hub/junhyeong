@@ -775,23 +775,22 @@ async function generateTreatment(){
 
   var seqs=(currentPlan.sequences||currentPlan.episodes||[]).map(function(e,i){return 'SEQ'+(i+1)+': '+e;}).join(NL);
   var fmt=currentPlan.format||'';
-  var sceneTime=fmt.indexOf('숏폼')>-1?'씬 하나당 5~15초':'씬 하나당 20~50초';
+  var totalTime=fmt.indexOf('숏폼')>-1?'전체 영상 60초~2분 이내':'전체 영상 3분~15분 기준';
 
   var prompt=[
-    '유튜브 영상 1편의 트리트먼트를 작성해줘. 에피소드 시리즈가 아닌 한 영상의 시퀀스 흐름이야.',
-    '콘텐츠명: '+currentPlan.title,'포맷: '+fmt,'',
+    '유튜브 영상 1편의 트리트먼트를 작성해줘.',
+    '콘텐츠명: '+currentPlan.title,'포맷: '+fmt,'기준: '+totalTime,'',
     '시퀀스 구성:',seqs,'',
     '규칙:',
     '1. 위 시퀀스 순서대로 영상 1편의 흐름 구성',
-    '2. 각 시퀀스마다 씬 3~5개 작성',
-    '3. '+sceneTime,
+    '2. 씬 개수는 해당 시퀀스의 내용과 호흡에 맞게 자유롭게 결정해줘. 꼭 맞출 필요 없어.',
+    '3. 씬별 러닝타임은 전체 기준 시간 안에서 내용에 따라 자연스럽게 배분해줘. 짧은 씬과 긴 씬이 섞여도 좋아.',
     '4. 마크다운 절대 사용 금지',
     '5. 아래 형식만 사용','',
     '[SEQ1] 시퀀스 이름',
-    '흐름: 이 시퀀스에서 일어나는 일 2줄',
-    'S1 | 장소/상황 | 씬 내용 | 10s | cinematic english prompt',
-    'S2 | 장소/상황 | 씬 내용 | 8s | english prompt',
-    'S3 | 장소/상황 | 씬 내용 | 12s | english prompt','',
+    '흐름: 이 시퀀스의 역할과 분위기 2줄',
+    'S1 | 장소/상황 | 씬 내용 | 러닝타임 | cinematic english prompt',
+    'S2 | 장소/상황 | 씬 내용 | 러닝타임 | english prompt','',
     '[SEQ2] (동일 형식)','...(전체 시퀀스 작성)'
   ].join(NL);
 
