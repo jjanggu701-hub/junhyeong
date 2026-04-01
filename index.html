@@ -164,6 +164,20 @@ textarea{resize:vertical;min-height:70px;line-height:1.6}
 .ws-toggle-wrap.on .ws-switch{background:var(--blue)}
 .ws-toggle-wrap.on .ws-switch::after{transform:translateX(14px)}
 
+/* ── 기획 모드 / 러닝타임 ── */
+.mode-group{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.mode-btn{background:var(--surface2);border:1px solid var(--border);color:var(--muted);font-size:12px;font-family:'Noto Sans KR',sans-serif;padding:8px 10px;border-radius:7px;cursor:pointer;transition:all .2s;text-align:center;user-select:none}
+.mode-btn:hover{border-color:var(--muted2);color:var(--text)}
+.mode-btn.active{background:#0a1a2a;border-color:var(--blue);color:#93c5fd}
+.series-wrap{margin-top:8px;display:none;animation:fadeIn .2s ease}
+.series-wrap.visible{display:block}
+.series-ep-row{display:flex;align-items:center;gap:8px}
+.series-ep-row label{font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;white-space:nowrap}
+.series-ep-row input{width:60px;flex-shrink:0}
+.runtime-row{display:flex;align-items:center;gap:8px;margin-top:8px}
+.runtime-row input{flex:1}
+.runtime-row label{font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;white-space:nowrap}
+
 /* ── 트렌드 분석 탭 ── */
 .tab-btn.trend-tab.active{background:var(--trend);color:#000}
 .content-area.trend-mode{padding:0;overflow:hidden}
@@ -312,6 +326,24 @@ textarea{resize:vertical;min-height:70px;line-height:1.6}
       <div class="chip active" onclick="toggleChip(this)">숏폼</div>
       <div class="chip" onclick="toggleChip(this)">롱폼</div>
       <div class="chip" onclick="toggleChip(this)">숏폼+롱폼</div>
+    </div>
+    <div class="runtime-row">
+      <label>목표 러닝타임</label>
+      <input type="text" id="runtime-input" placeholder="예: 60초, 10분, 25분">
+    </div>
+  </div>
+  <div>
+    <div class="section-title">기획 모드</div>
+    <div class="mode-group">
+      <div class="mode-btn active" id="mode-single" onclick="setMode('single')">📄 단편</div>
+      <div class="mode-btn" id="mode-series" onclick="setMode('series')">📺 시리즈</div>
+    </div>
+    <div class="series-wrap" id="series-wrap">
+      <div class="series-ep-row">
+        <label>총 회차 수</label>
+        <input type="number" id="series-count" value="5" min="2" max="20" style="width:60px">
+        <span style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace">EP</span>
+      </div>
     </div>
   </div>
   <div>
@@ -751,6 +783,15 @@ function useInGenerator(title,desc){
   selectIdea(card,idea);
 }
 function toggleChip(el){ el.classList.toggle('active'); }
+function setMode(mode){
+  document.getElementById('mode-single').classList.toggle('active',mode==='single');
+  document.getElementById('mode-series').classList.toggle('active',mode==='series');
+  var sw=document.getElementById('series-wrap');
+  sw.classList.toggle('visible',mode==='series');
+}
+function getMode(){ return document.getElementById('mode-series').classList.contains('active')?'series':'single'; }
+function getRuntime(){ return (document.getElementById('runtime-input')?document.getElementById('runtime-input').value.trim():''); }
+function getSeriesCount(){ return parseInt(document.getElementById('series-count')?document.getElementById('series-count').value:5)||5; }
 function toggleNewsBadge(){
   var val=document.getElementById('news-input')?document.getElementById('news-input').value.trim():'';
   var badge=document.getElementById('news-badge');
@@ -1112,21 +1153,34 @@ async function selectIdea(card,idea){
 
   var fmt=getChips('chips-format');
   var fmtRule=getFormatRule(fmt);
+  var runtime=getRuntime();
+  var mode=getMode();
+  var seriesCount=getSeriesCount();
   var MAX_RETRY=3;
   var attempt=0;
   var bestPlan=null;
   var bestEval=null;
 
+  var modeRule=mode==='series'
+    ?'기획 모드: 시리즈 (총 '+seriesCount+'회차). sequences 배열에 EP1~EP'+seriesCount+' 각 회차의 핵심 내용을 한 줄씩 담아줘. 각 회차는 독립적이지만 전체 흐름이 연결되도록.'
+    :'기획 모드: 단편. 영상 1편 안의 시퀀스(SEQ) 흐름으로 구성. SEQ 개수는 내용 흐름에 맞게 자유롭게 결정.';
+  var runtimeRule=runtime?'목표 러닝타임: '+runtime+'. 이 러닝타임에 맞게 SEQ 수와 밀도를 조절해줘.':'';
+
+  var seqExample=mode==='series'
+    ?'["EP1: 도입 - 핵심사건","EP2: 전개","EP3: 반전","EP4: 클라이맥스","EP5: 결말"]'
+    :'["SEQ1: 훅/오프닝","SEQ2: 전개1","SEQ3: 전개2","SEQ4: 클라이맥스","SEQ5: 마무리/CTA"]';
+
   var prompt=[
     '너는 유튜브 콘텐츠 PD야. 아래 콘텐츠의 기획서를 JSON으로 작성해줘.',
     '콘텐츠명: '+idea.title,'컨셉: '+idea.desc,
     '포맷 규칙: '+fmtRule,
-    '구조 규칙: 에피소드 시리즈가 아니라 영상 1편 안의 시퀀스(SEQ1~5) 흐름으로 구성해줘.',
-    '중요: hook(첫 3초 훅)은 반드시 구체적이고 20자 이상으로 작성할 것. sequences는 반드시 5개. target과 revenue도 구체적으로.',
+    modeRule,
+    runtimeRule,
+    '중요: hook(첫 3초 훅)은 반드시 구체적이고 20자 이상으로 작성할 것. target과 revenue도 구체적으로.',
     '',
     'JSON만 출력. 코드블록과 설명 없이.',
-    '{"title":"","subtitle":"","format":"","target":"","hook":"","sequences":["SEQ1: 훅/오프닝","SEQ2: 전개1","SEQ3: 전개2","SEQ4: 클라이맥스","SEQ5: 마무리/CTA"],"tools":"","diff":"","revenue":"","thumbnail":"","schedule":""}'
-  ].join(NL);
+    '{"title":"","subtitle":"","format":"","target":"","hook":"","sequences":'+seqExample+',"tools":"","diff":"","revenue":"","thumbnail":"","schedule":""}'
+  ].filter(Boolean).join(NL);
 
   while(attempt<MAX_RETRY){
     attempt++;
@@ -1154,7 +1208,10 @@ async function selectIdea(card,idea){
         con.innerHTML=evalHtml
           +'<div class="plan-doc"><div class="plan-doc-header"><div class="plan-doc-title">'+(bestPlan.title||idea.title)+'</div><div class="plan-doc-subtitle">'+(bestPlan.subtitle||'')+'</div></div><div class="plan-doc-body">'
           +pRow('FORMAT',bestPlan.format||'')+pRow('TARGET',bestPlan.target||'')+pRow('HOOK',bestPlan.hook||'')
-          +pRow('SEQUENCES',(bestPlan.sequences||bestPlan.episodes||[]).map(function(e,i){return '<li><span>SEQ'+(i+1)+': '+e+'</span></li>';}).join(''),true)
+          +pRow('SEQUENCES',(bestPlan.sequences||bestPlan.episodes||[]).map(function(e,i){
+          var text=String(e).replace(/^SEQ\d+\s*:\s*/i,'');
+          return '<li><span>SEQ'+(i+1)+': '+text+'</span></li>';
+        }).join(''),true)
           +pRow('TOOLS',bestPlan.tools||'')+pRow('DIFF',bestPlan.diff||'')+pRow('REVENUE',bestPlan.revenue||'')
           +pRow('THUMBNAIL',bestPlan.thumbnail||'')+pRow('SCHEDULE',bestPlan.schedule||'')
           +'</div></div>';
@@ -1198,16 +1255,18 @@ async function generateTreatment(){
 
   var seqs=(currentPlan.sequences||currentPlan.episodes||[]).map(function(e,i){return 'SEQ'+(i+1)+': '+e;}).join(NL);
   var fmt=currentPlan.format||'';
-  var totalTime=fmt.indexOf('숏폼')>-1?'전체 영상 60초~2분 이내':'전체 영상 3분~15분 기준';
+  var totalTime=getRuntime()||(fmt.indexOf('숏폼')>-1?'60초~2분 이내':'3분~15분 기준');
+  var modeNote=getMode()==='series'?'시리즈 중 1회차 기준으로 트리트먼트 작성.':'';
 
   var prompt=[
     '유튜브 영상 1편의 트리트먼트를 작성해줘.',
-    '콘텐츠명: '+currentPlan.title,'포맷: '+fmt,'기준: '+totalTime,'',
-    '시퀀스 구성:',seqs,'',
+    '콘텐츠명: '+currentPlan.title,'포맷: '+fmt,'목표 러닝타임: '+totalTime,
+    modeNote,
+    '','시퀀스 구성:',seqs,'',
     '규칙:',
     '1. 위 시퀀스 순서대로 영상 1편의 흐름 구성',
-    '2. 씬 개수는 해당 시퀀스의 내용과 호흡에 맞게 자유롭게 결정해줘. 꼭 맞출 필요 없어.',
-    '3. 씬별 러닝타임은 전체 기준 시간 안에서 내용에 따라 자연스럽게 배분해줘. 짧은 씬과 긴 씬이 섞여도 좋아.',
+    '2. 씬 개수는 내용과 호흡에 맞게 자유롭게 결정. 목표 러닝타임에 맞게 밀도 조절.',
+    '3. 씬별 러닝타임은 전체 기준 안에서 내용에 따라 자연스럽게 배분. 짧은 씬과 긴 씬이 섞여도 좋아.',
     '4. 마크다운 절대 사용 금지',
     '5. 아래 형식만 사용','',
     '[SEQ1] 시퀀스 이름',
@@ -1215,7 +1274,7 @@ async function generateTreatment(){
     'S1 | 장소/상황 | 씬 내용 | 러닝타임 | cinematic english prompt',
     'S2 | 장소/상황 | 씬 내용 | 러닝타임 | english prompt','',
     '[SEQ2] (동일 형식)','...(전체 시퀀스 작성)'
-  ].join(NL);
+  ].filter(Boolean).join(NL);
 
   try{
     var raw=await callAPI(prompt,4000);
