@@ -6,7 +6,7 @@
 <title>YPLAN — YouTube 기획 자동화</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#0a0a0a;--surface:#111;--surface2:#1a1a1a;--border:#2a2a2a;--accent:#ff3b3b;--accent2:#ff6b35;--text:#f0f0f0;--muted:#666;--muted2:#444;--success:#2dce6e;--blue:#3b82f6;--purple:#a855f7}
+:root{--bg:#0a0a0a;--surface:#111;--surface2:#1a1a1a;--border:#2a2a2a;--accent:#ff3b3b;--accent2:#ff6b35;--text:#f0f0f0;--muted:#666;--muted2:#444;--success:#2dce6e;--blue:#3b82f6;--purple:#a855f7;--trend:#f59e0b}
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;min-height:100vh;font-size:14px;line-height:1.6}
 header{border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;background:var(--bg);position:sticky;top:0;z-index:10}
@@ -27,8 +27,10 @@ header{border-bottom:1px solid var(--border);padding:14px 24px;display:flex;alig
 .key-status{font-size:10px;font-family:'JetBrains Mono',monospace;padding:3px 8px;border-radius:3px;white-space:nowrap}
 .key-status.ok{background:#0a2a0a;color:var(--success);border:1px solid #1a4a1a}
 .key-status.empty{background:#2a1a0a;color:#aaa;border:1px solid #3a2a0a}
-main{display:grid;grid-template-columns:280px 1fr;min-height:calc(100vh - 95px)}
-aside{border-right:1px solid var(--border);padding:18px;display:flex;flex-direction:column;gap:14px;background:var(--surface);overflow-y:auto;max-height:calc(100vh - 95px)}
+main{display:grid;grid-template-columns:280px 1fr;min-height:calc(100vh - 95px);transition:grid-template-columns .3s}
+main.full-width{grid-template-columns:0px 1fr}
+aside{border-right:1px solid var(--border);padding:18px;display:flex;flex-direction:column;gap:14px;background:var(--surface);overflow-y:auto;max-height:calc(100vh - 95px);overflow-x:hidden;transition:padding .3s,opacity .3s}
+main.full-width aside{padding:0;opacity:0;pointer-events:none;border-right:none}
 .section-title{font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;font-family:'JetBrains Mono',monospace;margin-bottom:6px}
 select,input[type="text"],textarea{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:8px 12px;font-family:'Noto Sans KR',sans-serif;font-size:13px;outline:none;transition:border-color .2s;appearance:none}
 select:focus,input:focus,textarea:focus{border-color:var(--accent)}
@@ -141,6 +143,75 @@ textarea{resize:vertical;min-height:70px;line-height:1.6}
 .tmpl-title{font-size:13px;font-weight:500}
 .tmpl-body{padding:14px 16px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);line-height:1.9;white-space:pre-wrap}
 .tmpl-body .v{color:var(--accent)}
+
+/* ── 트렌드 분석 탭 ── */
+.tab-btn.trend-tab.active{background:var(--trend);color:#000}
+.content-area.trend-mode{padding:0;overflow:hidden}
+.trend-layout{display:flex;flex-direction:column;height:calc(100vh - 95px)}
+.trend-search-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 24px;display:flex;flex-direction:column;gap:12px;flex-shrink:0}
+.trend-search-row1{display:flex;align-items:flex-start;gap:10px}
+.trend-search-row2{display:flex;align-items:center;gap:10px}
+.trend-search-bar .section-title{margin-bottom:0;white-space:nowrap;flex-shrink:0;padding-top:4px}
+.trend-chips-wrap{display:flex;flex-wrap:wrap;gap:6px;flex:1;min-width:0}
+.trend-chips-wrap .chip.active{background:var(--trend);border-color:var(--trend);color:#000}
+.trend-keyword-input{background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:7px 14px;font-family:'Noto Sans KR',sans-serif;font-size:13px;outline:none;transition:border-color .2s;flex:1;min-width:0}
+.trend-keyword-input:focus{border-color:var(--trend)}
+.trend-keyword-input::placeholder{color:var(--muted2)}
+.trend-period-select{background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:7px 14px;font-family:'Noto Sans KR',sans-serif;font-size:12px;outline:none;cursor:pointer;appearance:none;flex-shrink:0;width:140px}
+.trend-analyze-btn{background:var(--trend);color:#000;border:none;border-radius:7px;padding:9px 24px;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;cursor:pointer;transition:all .2s;flex-shrink:0;white-space:nowrap}
+.trend-analyze-btn:hover{background:#d97706;transform:translateY(-1px)}
+.trend-analyze-btn:disabled{background:var(--muted2);color:var(--muted);cursor:not-allowed;transform:none}
+.trend-content{overflow-y:auto;flex:1;padding:24px}
+.trend-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:400px;gap:12px;text-align:center}
+.trend-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.trend-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;animation:fadeIn .4s ease both}
+.trend-card-hd{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.trend-card-icon{font-size:14px}
+.trend-card-label{font-size:10px;font-family:'JetBrains Mono',monospace;letter-spacing:1px;text-transform:uppercase}
+.trend-card-body{padding:14px 16px}
+.hook-item{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:8px;transition:border-color .2s}
+.hook-item:last-child{margin-bottom:0}
+.hook-item:hover{border-color:var(--trend)}
+.hook-pattern{font-size:13px;font-weight:600;color:var(--trend);margin-bottom:4px}
+.hook-desc{font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:6px}
+.hook-example{background:#1a1500;border-left:2px solid var(--trend);padding:5px 10px;font-size:12px;color:#fde68a;font-style:italic;border-radius:0 4px 4px 0}
+.format-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+.format-item:last-child{border-bottom:none}
+.format-bar-wrap{flex:1}
+.format-name{font-size:12px;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center}
+.format-pct{font-size:10px;color:var(--trend);font-family:'JetBrains Mono',monospace}
+.format-bar{height:4px;background:var(--surface2);border-radius:2px;overflow:hidden}
+.format-bar-fill{height:100%;background:linear-gradient(90deg,var(--trend),var(--accent2));border-radius:2px;transition:width .8s cubic-bezier(.4,0,.2,1)}
+.format-tag{font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;white-space:nowrap}
+.gap-item{background:var(--bg);border:1px solid var(--border);border-left:3px solid var(--success);border-radius:0 8px 8px 0;padding:10px 14px;margin-bottom:8px}
+.gap-item:last-child{margin-bottom:0}
+.gap-title{font-size:13px;font-weight:600;color:var(--success);margin-bottom:4px}
+.gap-desc{font-size:12px;color:var(--muted);line-height:1.6}
+.tidea-item{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:8px;transition:border-color .2s}
+.tidea-item:last-child{margin-bottom:0}
+.tidea-item:hover{border-color:var(--accent)}
+.tidea-num{font-family:'Bebas Neue',sans-serif;font-size:11px;color:var(--accent);letter-spacing:1px;margin-bottom:3px}
+.tidea-title{font-size:13px;font-weight:600;margin-bottom:4px}
+.tidea-desc{font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:8px}
+.tidea-footer{display:flex;align-items:center;justify-content:space-between}
+.tidea-meta{display:flex;gap:8px}
+.tidea-tag{font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--muted);background:var(--surface);border:1px solid var(--border);padding:2px 7px;border-radius:3px}
+.tidea-use-btn{background:var(--accent);color:white;border:none;font-size:10px;font-family:'JetBrains Mono',monospace;letter-spacing:1px;padding:4px 12px;border-radius:4px;cursor:pointer;transition:all .2s;white-space:nowrap}
+.tidea-use-btn:hover{background:#e02020;transform:scale(1.02)}
+.kw-bubble-wrap{display:flex;flex-wrap:wrap;gap:7px;padding:4px 0}
+.kw-bubble{font-size:12px;padding:5px 12px;border-radius:20px;font-family:'JetBrains Mono',monospace;border:1px solid;cursor:default;transition:transform .15s}
+.kw-bubble:hover{transform:scale(1.05)}
+.trend-meta-bar{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 18px;margin-bottom:16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;animation:fadeIn .3s ease}
+.tmd-item{display:flex;align-items:center;gap:6px}
+.tmd-dot{width:8px;height:8px;border-radius:50%}
+.tmd-label{font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace}
+.tmd-val{font-size:11px;color:var(--text);font-family:'JetBrains Mono',monospace}
+.trend-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:300px;gap:16px}
+.trend-loader{width:36px;height:36px;border:2px solid var(--border);border-top-color:var(--trend);border-radius:50%;animation:spin .8s linear infinite}
+.trend-loading-text{font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace;text-align:center}
+.trend-loading-sub{font-size:11px;color:var(--muted2);font-family:'JetBrains Mono',monospace}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.trend-pulse{animation:pulse 1.4s ease-in-out infinite}
 ::-webkit-scrollbar{width:3px}
 ::-webkit-scrollbar-thumb{background:var(--muted2);border-radius:2px}
 
@@ -181,6 +252,7 @@ textarea{resize:vertical;min-height:70px;line-height:1.6}
   <div class="header-right">
     <div class="tabs">
       <button class="tab-btn active" onclick="switchTab('generator')">기획 생성기</button>
+      <button class="tab-btn trend-tab" onclick="switchTab('trends')">📊 트렌드 분석</button>
       <button class="tab-btn" onclick="switchTab('templates')">프롬프트 템플릿</button>
     </div>
     <button class="export-btn" id="export-btn" onclick="exportAll()">↓ 전체 내보내기</button>
@@ -212,7 +284,7 @@ textarea{resize:vertical;min-height:70px;line-height:1.6}
   <div class="si-item"><div class="si-dot" id="si-6">6</div><span class="si-label" id="sl-6">썸네일</span></div>
 </div>
 
-<main>
+<main id="main-layout">
 <aside>
   <div>
     <div class="section-title">포맷</div>
@@ -268,7 +340,7 @@ textarea{resize:vertical;min-height:70px;line-height:1.6}
   <button class="generate-btn" id="gen-btn" onclick="generate()">⚡ 기획 자동 생성</button>
 </aside>
 
-<div class="content-area">
+<div class="content-area" id="content-area-main">
   <div class="tab-content active" id="tab-generator">
     <div class="empty-state" id="empty-state">
       <div class="empty-icon">🎬</div>
@@ -345,6 +417,48 @@ textarea{resize:vertical;min-height:70px;line-height:1.6}
           <button class="copy-btn" onclick="copyEl('thumbnail-container')">COPY</button>
         </div>
         <div id="thumbnail-container"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 트렌드 분석 탭 ── -->
+  <div class="tab-content" id="tab-trends" style="padding:0;height:calc(100vh - 95px)">
+    <div class="trend-layout">
+      <div class="trend-search-bar">
+        <div class="trend-search-row1">
+          <span class="section-title" style="color:var(--trend)">장르</span>
+          <div class="trend-chips-wrap" id="trend-chips-genre">
+            <div class="chip active" onclick="toggleTrendChip(this)">AI 영상</div>
+            <div class="chip" onclick="toggleTrendChip(this)">예능/버라이어티</div>
+            <div class="chip" onclick="toggleTrendChip(this)">정보/교육</div>
+            <div class="chip" onclick="toggleTrendChip(this)">드라마/스토리</div>
+            <div class="chip" onclick="toggleTrendChip(this)">공감/밈</div>
+            <div class="chip" onclick="toggleTrendChip(this)">브이로그</div>
+            <div class="chip" onclick="toggleTrendChip(this)">리뷰/언박싱</div>
+            <div class="chip" onclick="toggleTrendChip(this)">챌린지</div>
+            <div class="chip" onclick="toggleTrendChip(this)">바이럴 마케팅</div>
+            <div class="chip" onclick="toggleTrendChip(this)">모큐멘터리</div>
+          </div>
+        </div>
+        <div class="trend-search-row2">
+          <span class="section-title" style="color:var(--muted)">키워드</span>
+          <input class="trend-keyword-input" id="trend-keyword" placeholder="추가 키워드 (선택)">
+          <span class="section-title" style="color:var(--muted);margin-left:8px">기간</span>
+          <select class="trend-period-select" id="trend-period">
+            <option value="이번 주">이번 주</option>
+            <option value="이번 달" selected>이번 달</option>
+            <option value="최근 3개월">최근 3개월</option>
+            <option value="최근 6개월">최근 6개월</option>
+          </select>
+          <button class="trend-analyze-btn" id="trend-btn" onclick="analyzeTrend()">📊 분석 시작</button>
+        </div>
+      </div>
+      <div class="trend-content" id="trend-content">
+        <div class="trend-empty">
+          <div style="font-size:44px;opacity:.15">📊</div>
+          <h3 style="font-size:17px;font-weight:500;color:var(--muted)">트렌드 분석 준비 완료</h3>
+          <p style="font-size:13px;color:var(--muted2);max-width:280px;line-height:1.8;text-align:center">API 키 입력 후 장르와 기간을 선택하고<br>분석 시작 버튼을 눌러주세요</p>
+        </div>
       </div>
     </div>
   </div>
@@ -429,10 +543,171 @@ function checkKey(){
   }
 }
 function switchTab(name){
-  ['generator','templates'].forEach(function(t,i){
-    document.querySelectorAll('.tab-btn')[i].classList.toggle('active',t===name);
-    document.getElementById('tab-'+t).classList.toggle('active',t===name);
+  var tabs=['generator','trends','templates'];
+  var btns=document.querySelectorAll('.tab-btn');
+  tabs.forEach(function(t,i){
+    btns[i].classList.toggle('active',t===name);
+    var el=document.getElementById('tab-'+t);
+    if(el)el.classList.toggle('active',t===name);
   });
+  var con=document.getElementById('content-area-main');
+  var layout=document.getElementById('main-layout');
+  var stepInd=document.getElementById('step-indicator');
+  if(name==='trends'){
+    if(layout)layout.classList.add('full-width');
+    if(stepInd)stepInd.classList.remove('visible');
+    document.getElementById('export-btn').style.display='none';
+    if(con){con.classList.add('trend-mode');}
+  } else {
+    if(layout)layout.classList.remove('full-width');
+    if(con){con.classList.remove('trend-mode');}
+    if(name==='generator'&&currentPlan){
+      document.getElementById('export-btn').style.display='block';
+      setStep(currentPlan._step||2);
+    }
+  }
+}
+function toggleTrendChip(el){ el.classList.toggle('active'); }
+function getTrendChips(){
+  return Array.from(document.querySelectorAll('#trend-chips-genre .chip.active')).map(function(c){return c.textContent;});
+}
+function parseTrendSection(raw,tag){
+  var start=raw.indexOf('['+tag+']');
+  if(start===-1)return[];
+  var nextTag=raw.indexOf('[',start+tag.length+2);
+  var block=nextTag>-1?raw.slice(start,nextTag):raw.slice(start);
+  return block.split('\n').map(function(l){return l.trim();}).filter(function(l){return l.length>0&&l.indexOf('[')!==0;});
+}
+async function analyzeTrend(){
+  if(getKey().indexOf('sk-ant-')!==0){alert('API Key를 먼저 입력해주세요.');return;}
+  var genres=getTrendChips();
+  var keyword=document.getElementById('trend-keyword').value.trim();
+  var period=document.getElementById('trend-period').value;
+  if(!genres.length){alert('장르를 최소 1개 선택해주세요.');return;}
+  var btn=document.getElementById('trend-btn');
+  btn.disabled=true;btn.textContent='분석 중...';
+  var con=document.getElementById('trend-content');
+  con.innerHTML='<div class="trend-loading"><div class="trend-loader"></div>'
+    +'<div class="trend-loading-text trend-pulse" id="tl-text">트렌드 데이터 분석 중...</div>'
+    +'<div class="trend-loading-sub">장르 패턴 · 훅 공식 · 콘텐츠 갭 도출 중</div></div>';
+  var NL='\n';
+  var prompt=[
+    '너는 한국 유튜브 시장 최고의 트렌드 분석 전문가야.',
+    '아래 조건으로 유튜브 트렌드 분석 리포트를 작성해줘.',
+    '장르: '+genres.join(', '),'기간: '+period,(keyword?'키워드: '+keyword:''),
+    '','아래 5개 섹션을 정확히 이 형식으로만 작성. 마크다운 절대 사용 금지.','',
+    '[KEYWORDS]','지금 뜨는 핵심 키워드 8~12개:','KW: 키워드 | 열기(상/중/하) | 색상코드(예:#f59e0b)','',
+    '[HOOKS]','잘 되는 훅 패턴 4~5개:','HOOK: 패턴명 | 설명 1줄 | 실제 제목 예시','',
+    '[FORMATS]','인기 포맷 4~5개:','FMT: 포맷명 | 점유율(숫자만) | 1줄 특징','',
+    '[GAPS]','콘텐츠 갭/기회 3~4개:','GAP: 갭 제목 | 기회 설명 1~2줄','',
+    '[IDEAS]','트렌드 반영 구체적 아이디어 5개:','IDEA: 제목 | 컨셉 1줄 | 포맷 | 난이도(상/중/하)',
+  ].filter(Boolean).join(NL);
+  try{
+    var raw=await callAPI(prompt,3000);
+    renderTrendResult(raw,genres,period);
+  }catch(e){
+    con.innerHTML='<div style="padding:24px"><div class="error-box">오류: '+e.message+'<br><br><button class="retry-btn" onclick="analyzeTrend()">다시 시도</button></div></div>';
+  }
+  btn.disabled=false;btn.textContent='📊 분석 시작';
+}
+function renderTrendResult(raw,genres,period){
+  var con=document.getElementById('trend-content');
+  var h='<div class="trend-meta-bar">'
+    +'<div class="tmd-item"><div class="tmd-dot" style="background:var(--trend)"></div><span class="tmd-label">장르</span><span class="tmd-val">'+genres.join(' · ')+'</span></div>'
+    +'<div class="tmd-item"><div class="tmd-dot" style="background:var(--blue)"></div><span class="tmd-label">기간</span><span class="tmd-val">'+period+'</span></div>'
+    +'<div class="tmd-item" style="margin-left:auto"><span class="tmd-label" style="color:var(--success)">✓ 분석 완료</span></div>'
+    +'</div>';
+  var kwLines=parseTrendSection(raw,'KEYWORDS');
+  if(kwLines.length){
+    h+='<div class="trend-card" style="margin-bottom:16px">'
+      +'<div class="trend-card-hd"><span class="trend-card-icon">🔑</span><span class="trend-card-label" style="color:var(--trend)">지금 뜨는 키워드</span></div>'
+      +'<div class="trend-card-body"><div class="kw-bubble-wrap">';
+    kwLines.forEach(function(line){
+      if(line.indexOf('KW:')!==0)return;
+      var p=line.slice(3).split('|').map(function(x){return x.trim();});
+      var word=p[0]||'',heat=p[1]||'중',color=p[2]||'#f59e0b';
+      h+='<div class="kw-bubble" style="background:'+color+'22;border-color:'+color+'55;color:'+color+'">'+word+'<span style="margin-left:5px;opacity:.6;font-size:9px">'+heat+'</span></div>';
+    });
+    h+='</div></div></div>';
+  }
+  var hookLines=parseTrendSection(raw,'HOOKS');
+  var fmtLines=parseTrendSection(raw,'FORMATS');
+  h+='<div class="trend-grid">';
+  h+='<div class="trend-card">'
+    +'<div class="trend-card-hd"><span class="trend-card-icon">🔥</span><span class="trend-card-label" style="color:var(--trend)">잘 되는 훅 패턴</span></div>'
+    +'<div class="trend-card-body">';
+  hookLines.forEach(function(line){
+    if(line.indexOf('HOOK:')!==0)return;
+    var p=line.slice(5).split('|').map(function(x){return x.trim();});
+    h+='<div class="hook-item"><div class="hook-pattern">'+(p[0]||'')+'</div><div class="hook-desc">'+(p[1]||'')+'</div>'+(p[2]?'<div class="hook-example">"'+p[2]+'"</div>':'')+'</div>';
+  });
+  h+='</div></div>';
+  h+='<div class="trend-card">'
+    +'<div class="trend-card-hd"><span class="trend-card-icon">📊</span><span class="trend-card-label" style="color:var(--blue)">인기 포맷 분석</span></div>'
+    +'<div class="trend-card-body">';
+  fmtLines.forEach(function(line){
+    if(line.indexOf('FMT:')!==0)return;
+    var p=line.slice(4).split('|').map(function(x){return x.trim();});
+    var pct=parseInt(p[1])||0;
+    h+='<div class="format-item"><div class="format-bar-wrap"><div class="format-name"><span>'+(p[0]||'')+'</span><span class="format-pct">'+pct+'%</span></div><div class="format-bar"><div class="format-bar-fill" style="width:0%" data-w="'+pct+'%"></div></div></div>'+(p[2]?'<div class="format-tag">'+p[2]+'</div>':'')+'</div>';
+  });
+  h+='</div></div></div>';
+  var gapLines=parseTrendSection(raw,'GAPS');
+  var ideaLines=parseTrendSection(raw,'IDEAS');
+  h+='<div class="trend-grid">';
+  h+='<div class="trend-card">'
+    +'<div class="trend-card-hd"><span class="trend-card-icon">💡</span><span class="trend-card-label" style="color:var(--success)">콘텐츠 갭 / 기회</span></div>'
+    +'<div class="trend-card-body">';
+  gapLines.forEach(function(line){
+    if(line.indexOf('GAP:')!==0)return;
+    var p=line.slice(4).split('|').map(function(x){return x.trim();});
+    h+='<div class="gap-item"><div class="gap-title">'+(p[0]||'')+'</div><div class="gap-desc">'+(p[1]||'')+'</div></div>';
+  });
+  h+='</div></div>';
+  h+='<div class="trend-card">'
+    +'<div class="trend-card-hd"><span class="trend-card-icon">🎯</span><span class="trend-card-label" style="color:var(--accent)">트렌드 아이디어</span><span style="margin-left:auto;font-size:10px;color:var(--muted);font-family:JetBrains Mono,monospace">클릭 → 기획 생성기</span></div>'
+    +'<div class="trend-card-body">';
+  var ideaIdx=0;
+  ideaLines.forEach(function(line){
+    if(line.indexOf('IDEA:')!==0)return;
+    ideaIdx++;
+    var p=line.slice(5).split('|').map(function(x){return x.trim();});
+    var safeTitle=(p[0]||'').replace(/'/g,"\\'");
+    var safeDesc=(p[1]||'').replace(/'/g,"\\'");
+    h+='<div class="tidea-item"><div class="tidea-num">TREND IDEA '+String(ideaIdx).padStart(2,'0')+'</div>'
+      +'<div class="tidea-title">'+(p[0]||'')+'</div><div class="tidea-desc">'+(p[1]||'')+'</div>'
+      +'<div class="tidea-footer"><div class="tidea-meta">'
+      +(p[2]?'<span class="tidea-tag">'+p[2]+'</span>':'')
+      +(p[3]?'<span class="tidea-tag" style="color:'+(p[3]==='상'?'var(--accent)':p[3]==='중'?'var(--trend)':'var(--success)')+'">'+p[3]+'</span>':'')
+      +'</div><button class="tidea-use-btn" onclick="useInGenerator(\''+safeTitle+'\',\''+safeDesc+'\')">→ 기획 생성기</button></div></div>';
+  });
+  h+='</div></div></div>';
+  con.innerHTML=h;
+  setTimeout(function(){
+    document.querySelectorAll('.format-bar-fill').forEach(function(el){
+      var w=el.getAttribute('data-w');if(w)el.style.width=w;
+    });
+  },100);
+}
+function useInGenerator(title,desc){
+  switchTab('generator');
+  var idea={title:title,desc:desc,diff:'중',growth:'★★★★☆'};
+  window._lastIdea=idea;
+  document.getElementById('empty-state').style.display='none';
+  document.getElementById('result-area').style.display='block';
+  document.getElementById('export-btn').style.display='none';
+  hideAll();currentPlan=null;currentTreatment=null;
+  var con=document.getElementById('ideas-container');
+  document.getElementById('count-badge').textContent='트렌드 선택';
+  con.innerHTML='';
+  var card=document.createElement('div');
+  card.className='idea-card selected';
+  card.innerHTML='<div class="idea-num" style="color:var(--trend)">TREND IDEA</div>'
+    +'<div class="idea-name">'+title+'</div><div class="idea-desc">'+desc+'</div>'
+    +'<div class="idea-meta"><span>난이도: <b>중</b></span><span style="color:#EF9F27">성장성: <b style="color:#EF9F27">★★★★☆</b></span></div>';
+  con.appendChild(card);
+  setStep(1);
+  selectIdea(card,idea);
 }
 function toggleChip(el){ el.classList.toggle('active'); }
 function toggleCustom(el){
@@ -990,6 +1265,7 @@ function setStep(active){
   // 해당 단계로 스크롤
   var el=document.getElementById('si-'+active);
   if(el)el.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'});
+  if(currentPlan)currentPlan._step=active;
 }
 
 function pRow(k,v,list){
