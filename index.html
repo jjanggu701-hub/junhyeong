@@ -144,6 +144,19 @@ textarea{resize:vertical;min-height:70px;line-height:1.6}
 .tmpl-body{padding:14px 16px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);line-height:1.9;white-space:pre-wrap}
 .tmpl-body .v{color:var(--accent)}
 
+/* ── 웹서치 토글 ── */
+.ws-toggle-wrap{display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;cursor:pointer;transition:all .2s;user-select:none}
+.ws-toggle-wrap:hover{border-color:var(--blue)}
+.ws-toggle-wrap.on{background:#0a1a2a;border-color:var(--blue)}
+.ws-toggle-label{display:flex;align-items:center;gap:7px}
+.ws-toggle-icon{font-size:13px}
+.ws-toggle-text{font-size:12px;font-weight:500}
+.ws-toggle-sub{font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:2px}
+.ws-switch{width:32px;height:18px;background:var(--muted2);border-radius:9px;position:relative;transition:background .2s;flex-shrink:0}
+.ws-switch::after{content:'';position:absolute;width:12px;height:12px;background:white;border-radius:50%;top:3px;left:3px;transition:transform .2s}
+.ws-toggle-wrap.on .ws-switch{background:var(--blue)}
+.ws-toggle-wrap.on .ws-switch::after{transform:translateX(14px)}
+
 /* ── 트렌드 분석 탭 ── */
 .tab-btn.trend-tab.active{background:var(--trend);color:#000}
 .content-area.trend-mode{padding:0;overflow:hidden}
@@ -330,12 +343,33 @@ textarea{resize:vertical;min-height:70px;line-height:1.6}
     <textarea id="keyword-input" placeholder="예: 공감, 자극적, AI 활용, 역사..."></textarea>
   </div>
   <div>
+    <div class="section-title" style="display:flex;align-items:center;justify-content:space-between">
+      <span>실제 사건 / 뉴스 기반 <span style="color:var(--success);margin-left:4px">선택</span></span>
+      <span id="news-badge" style="display:none;background:#0a2a0a;border:1px solid var(--success);color:var(--success);font-size:9px;padding:2px 6px;border-radius:3px;font-family:JetBrains Mono,monospace">ON</span>
+    </div>
+    <textarea id="news-input" placeholder="실제 뉴스 기사나 사건 내용을 붙여넣으세요.&#10;입력 시 해당 사건 기반으로 아이디어를 생성합니다." style="min-height:90px" oninput="toggleNewsBadge()"></textarea>
+    <div style="font-size:10px;color:var(--muted2);margin-top:4px;font-family:JetBrains Mono,monospace;line-height:1.6">입력하면 실제 사건 기반 모드 자동 활성화</div>
+  </div>
+  <div>
     <div class="section-title">아이디어 개수</div>
     <select id="idea-count">
       <option value="5">5개</option>
       <option value="10" selected>10개</option>
       <option value="15">15개</option>
     </select>
+  </div>
+  <div>
+    <div class="section-title">웹 검색</div>
+    <div class="ws-toggle-wrap" id="ws-toggle" onclick="toggleWebSearch()">
+      <div>
+        <div class="ws-toggle-label">
+          <span class="ws-toggle-icon">🌐</span>
+          <span class="ws-toggle-text" id="ws-toggle-text">웹 검색 OFF</span>
+        </div>
+        <div class="ws-toggle-sub">ON 시 최신 트렌드·뉴스 기반 생성</div>
+      </div>
+      <div class="ws-switch" id="ws-switch"></div>
+    </div>
   </div>
   <button class="generate-btn" id="gen-btn" onclick="generate()">⚡ 기획 자동 생성</button>
 </aside>
@@ -603,7 +637,7 @@ async function analyzeTrend(){
     '[IDEAS]','트렌드 반영 구체적 아이디어 5개:','IDEA: 제목 | 컨셉 1줄 | 포맷 | 난이도(상/중/하)',
   ].filter(Boolean).join(NL);
   try{
-    var raw=await callAPI(prompt,3000);
+    var raw=await callAPI(prompt,3000,true); // 트렌드 탭은 웹서치 항상 ON
     renderTrendResult(raw,genres,period);
   }catch(e){
     con.innerHTML='<div style="padding:24px"><div class="error-box">오류: '+e.message+'<br><br><button class="retry-btn" onclick="analyzeTrend()">다시 시도</button></div></div>';
@@ -710,6 +744,11 @@ function useInGenerator(title,desc){
   selectIdea(card,idea);
 }
 function toggleChip(el){ el.classList.toggle('active'); }
+function toggleNewsBadge(){
+  var val=document.getElementById('news-input')?document.getElementById('news-input').value.trim():'';
+  var badge=document.getElementById('news-badge');
+  if(badge)badge.style.display=val?'inline-block':'none';
+}
 function toggleCustom(el){
   el.classList.toggle('active');
   document.getElementById('custom-wrap').style.display=el.classList.contains('active')?'block':'none';
@@ -736,11 +775,25 @@ function isCharacterGenre(genre){
   return g.indexOf('드라마')>-1||g.indexOf('예능')>-1||g.indexOf('버라이어티')>-1||g.indexOf('광고')>-1||g.indexOf('모큐멘터리')>-1||g.indexOf('스토리')>-1||g.indexOf('바이럴')>-1;
 }
 
-async function callAPI(prompt, maxTokens){
+var wsEnabled=false;
+function toggleWebSearch(){
+  wsEnabled=!wsEnabled;
+  var wrap=document.getElementById('ws-toggle');
+  var txt=document.getElementById('ws-toggle-text');
+  wrap.classList.toggle('on',wsEnabled);
+  txt.textContent=wsEnabled?'웹 검색 ON':'웹 검색 OFF';
+}
+function isWebSearchOn(){ return wsEnabled; }
+
+async function callAPI(prompt, maxTokens, useSearch){
+  var body={model:'claude-sonnet-4-20250514',max_tokens:maxTokens,messages:[{role:'user',content:prompt}]};
+  if(useSearch){
+    body.tools=[{type:'web_search_20250305',name:'web_search'}];
+  }
   var res=await fetch(API,{
     method:'POST',
     headers:{'Content-Type':'application/json','x-api-key':getKey(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:maxTokens,messages:[{role:'user',content:prompt}]})
+    body:JSON.stringify(body)
   });
   if(!res.ok){var e=await res.json().catch(function(){return{};});throw new Error(e.error?e.error.message:'API 오류 '+res.status);}
   var data=await res.json();
@@ -935,6 +988,7 @@ async function generate(){
   var fmt=getChips('chips-format'), genre=getChips('chips-genre'), target=getChips('chips-target');
   var custom=document.getElementById('custom-genre').value.trim();
   var keyword=document.getElementById('keyword-input').value.trim();
+  var newsInput=document.getElementById('news-input')?document.getElementById('news-input').value.trim():'';
   var count=document.getElementById('idea-count').value;
   var allGenre=genre.concat(custom?[custom]:[]);
   if(!fmt.length||!allGenre.length){alert('포맷과 장르를 최소 1개씩 선택해주세요.');return;}
@@ -951,28 +1005,45 @@ async function generate(){
   con.innerHTML='<div class="loading-state"><div class="loader"></div><div class="loading-text" id="t1">아이디어 생성 중... 0s</div></div>';
   var timer=startTimer('t1','아이디어 생성 중...');
 
-  var prompt=[
-    '너는 최고의 유튜브 콘텐츠 PD야. 아래 조건으로 아이디어 '+count+'개를 만들어줘.',
-    '포맷: '+fmt.join(', ')+' / 장르: '+allGenre.join(', ')+' / 타겟: '+(target.join(', ')||'10대~40대')+(keyword?' / 키워드: '+keyword:''),
-    '포맷 규칙: '+getFormatRule(fmt),
-    '',
-    '반드시 JSON 배열만 출력. 앞뒤 설명, 코드블록, 마크다운 절대 금지. JSON만.',
-    '[{"num":"01","title":"제목","desc":"컨셉2~3줄","diff":"상/중/하","growth":"★★★★☆"}]',
-    '위 형식으로 정확히 '+count+'개를 배열로 출력해. 마지막 } 뒤에 반드시 ] 로 닫아줘.'
-  ].join(NL);
+  var prompt;
+  if(newsInput){
+    prompt=[
+      '너는 최고의 유튜브 콘텐츠 PD야. 아래 실제 사건/뉴스를 기반으로 유튜브 콘텐츠 아이디어 '+count+'개를 만들어줘.',
+      '포맷: '+fmt.join(', ')+' / 장르: '+allGenre.join(', ')+' / 타겟: '+(target.join(', ')||'10대~40대')+(keyword?' / 추가 키워드: '+keyword:''),
+      '포맷 규칙: '+getFormatRule(fmt),'',
+      '=== 실제 사건 / 뉴스 원문 ===',newsInput,'=================','',
+      '규칙:',
+      '1. 반드시 위 실제 사건/뉴스를 직접 활용하거나 재구성한 아이디어만 생성. 관련 없는 창작 금지.',
+      '2. 제목에 실제 사건임을 드러내거나 재연/재구성임을 명시해도 좋음.',
+      '3. 반드시 JSON 배열만 출력. 앞뒤 설명, 코드블록, 마크다운 절대 금지.',
+      '[{"num":"01","title":"제목","desc":"실제 사건 기반 컨셉 2~3줄","diff":"상/중/하","growth":"★★★★☆","source":"원문 핵심 사실 1줄"}]',
+      '위 형식으로 정확히 '+count+'개를 배열로 출력해. 마지막 } 뒤에 반드시 ] 로 닫아줘.'
+    ].join(NL);
+  } else {
+    prompt=[
+      '너는 최고의 유튜브 콘텐츠 PD야. 아래 조건으로 아이디어 '+count+'개를 만들어줘.',
+      '포맷: '+fmt.join(', ')+' / 장르: '+allGenre.join(', ')+' / 타겟: '+(target.join(', ')||'10대~40대')+(keyword?' / 키워드: '+keyword:''),
+      '포맷 규칙: '+getFormatRule(fmt),'',
+      '반드시 JSON 배열만 출력. 앞뒤 설명, 코드블록, 마크다운 절대 금지. JSON만.',
+      '[{"num":"01","title":"제목","desc":"컨셉2~3줄","diff":"상/중/하","growth":"★★★★☆"}]',
+      '위 형식으로 정확히 '+count+'개를 배열로 출력해. 마지막 } 뒤에 반드시 ] 로 닫아줘.'
+    ].join(NL);
+  }
 
   try{
-    var raw=await callAPI(prompt,4000);
+    var raw=await callAPI(prompt,4000,isWebSearchOn());
     clearInterval(timer);
     var ideas=parseJSON(raw,true);
-    document.getElementById('count-badge').textContent='총 '+ideas.length+'개';
+    document.getElementById('count-badge').textContent=(newsInput?'📰 실제사건 기반 ':isWebSearchOn()?'🌐 웹서치 기반 ':'')+'총 '+ideas.length+'개';
     setStep(1);
     con.innerHTML='';
     ideas.forEach(function(idea,i){
       var card=document.createElement('div');
       card.className='idea-card';
+      var sourceTag=idea.source?'<div style="margin-top:6px;font-size:10px;color:var(--success);font-family:JetBrains Mono,monospace;background:#0a1a0a;border:1px solid #1a3a1a;padding:3px 8px;border-radius:3px">📰 '+idea.source+'</div>':'';
       card.innerHTML='<div class="idea-num">IDEA '+(idea.num||String(i+1).padStart(2,'0'))+'</div>'
         +'<div class="idea-name">'+idea.title+'</div><div class="idea-desc">'+idea.desc+'</div>'
+        +sourceTag
         +'<div class="idea-meta"><span>난이도: <b>'+idea.diff+'</b></span><span style="color:#EF9F27">성장성: <b style="color:#EF9F27">'+idea.growth+'</b></span></div>';
       card.onclick=function(){
         if(card.classList.contains('selected')){
