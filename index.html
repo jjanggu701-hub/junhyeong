@@ -144,7 +144,14 @@ textarea{resize:vertical;min-height:70px;line-height:1.6}
 .tmpl-body{padding:14px 16px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);line-height:1.9;white-space:pre-wrap}
 .tmpl-body .v{color:var(--accent)}
 
-/* ── 웹서치 토글 ── */
+/* ── 자가평가 루프 UI ── */
+.eval-bar{display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:6px;margin-bottom:10px;font-size:11px;font-family:'JetBrains Mono',monospace;animation:fadeIn .3s ease}
+.eval-bar.checking{background:#0a1a2a;border:1px solid var(--blue);color:#93c5fd}
+.eval-bar.pass{background:#0a2a0a;border:1px solid var(--success);color:var(--success)}
+.eval-bar.fail{background:#1a0d00;border:1px solid var(--trend);color:var(--trend)}
+.eval-bar.retry{background:#1a0a0a;border:1px solid var(--accent);color:#fca5a5}
+.eval-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.eval-score{margin-left:auto;font-size:10px;opacity:.7}
 .ws-toggle-wrap{display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;cursor:pointer;transition:all .2s;user-select:none}
 .ws-toggle-wrap:hover{border-color:var(--blue)}
 .ws-toggle-wrap.on{background:#0a1a2a;border-color:var(--blue)}
@@ -1060,7 +1067,38 @@ async function generate(){
   btn.disabled=false;btn.textContent='⚡ 기획 자동 생성';
 }
 
-// ── STEP 02 ──
+// ── STEP 02 — 자가평가 루프 ──
+var EVAL_CRITERIA={
+  hook:    {label:'첫 3초 훅',    check:function(p){return p.hook&&p.hook.length>10;}},
+  seq:     {label:'SEQ 구조',     check:function(p){return (p.sequences||[]).length>=4;}},
+  target:  {label:'타겟 명시',    check:function(p){return p.target&&p.target.length>2;}},
+  format:  {label:'포맷/길이',    check:function(p){return p.format&&p.format.length>2;}},
+  revenue: {label:'수익 구조',    check:function(p){return p.revenue&&p.revenue.length>5;}}
+};
+
+function evalPlan(p){
+  var results={};var score=0;
+  Object.keys(EVAL_CRITERIA).forEach(function(k){
+    var passed=EVAL_CRITERIA[k].check(p);
+    results[k]={label:EVAL_CRITERIA[k].label,passed:passed};
+    if(passed)score++;
+  });
+  return{results:results,score:score,total:Object.keys(EVAL_CRITERIA).length,pass:score>=4};
+}
+
+function renderEvalBar(eval,attempt){
+  var cls=eval.pass?'pass':attempt<3?'fail':'retry';
+  var icon=eval.pass?'✓':attempt<3?'✗':'⚠';
+  var msg=eval.pass?'자가평가 통과 — 기획서 확정':attempt<3?'기준 미달 — 재생성 중 ('+attempt+'/3)':'3회 시도 후 최선안 출력';
+  var dotColor=eval.pass?'var(--success)':attempt<3?'var(--trend)':'var(--accent)';
+  var failList=Object.keys(eval.results).filter(function(k){return !eval.results[k].passed;}).map(function(k){return eval.results[k].label;});
+  return '<div class="eval-bar '+cls+'">'
+    +'<div class="eval-dot" style="background:'+dotColor+'"></div>'
+    +'<span>'+icon+' '+msg+(failList.length&&!eval.pass?' — 미달: '+failList.join(', '):'')+'</span>'
+    +'<span class="eval-score">'+eval.score+'/'+eval.total+'</span>'
+    +'</div>';
+}
+
 async function selectIdea(card,idea){
   document.querySelectorAll('.idea-card').forEach(function(c){c.classList.remove('selected');});
   card.classList.add('selected');window._lastIdea=idea;
@@ -1070,40 +1108,79 @@ async function selectIdea(card,idea){
   var con=document.getElementById('plan-container');
   sec.style.display='block';
   document.getElementById('treatment-btn').style.display='none';
-  con.innerHTML='<div class="loading-state"><div class="loader"></div><div class="loading-text" id="t2">기획서 작성 중... 0s</div></div>';
-  var timer=startTimer('t2','기획서 작성 중...');
   sec.scrollIntoView({behavior:'smooth',block:'start'});
 
   var fmt=getChips('chips-format');
   var fmtRule=getFormatRule(fmt);
+  var MAX_RETRY=3;
+  var attempt=0;
+  var bestPlan=null;
+  var bestEval=null;
 
   var prompt=[
     '너는 유튜브 콘텐츠 PD야. 아래 콘텐츠의 기획서를 JSON으로 작성해줘.',
     '콘텐츠명: '+idea.title,'컨셉: '+idea.desc,
     '포맷 규칙: '+fmtRule,
     '구조 규칙: 에피소드 시리즈가 아니라 영상 1편 안의 시퀀스(SEQ1~5) 흐름으로 구성해줘.',
+    '중요: hook(첫 3초 훅)은 반드시 구체적이고 20자 이상으로 작성할 것. sequences는 반드시 5개. target과 revenue도 구체적으로.',
     '',
     'JSON만 출력. 코드블록과 설명 없이.',
     '{"title":"","subtitle":"","format":"","target":"","hook":"","sequences":["SEQ1: 훅/오프닝","SEQ2: 전개1","SEQ3: 전개2","SEQ4: 클라이맥스","SEQ5: 마무리/CTA"],"tools":"","diff":"","revenue":"","thumbnail":"","schedule":""}'
   ].join(NL);
 
-  try{
-    var raw=await callAPI(prompt,1500);
-    clearInterval(timer);
-    var p=parseJSON(raw,false);
-    currentPlan=p;
-    con.innerHTML='<div class="plan-doc"><div class="plan-doc-header"><div class="plan-doc-title">'+(p.title||idea.title)+'</div><div class="plan-doc-subtitle">'+(p.subtitle||'')+'</div></div><div class="plan-doc-body">'
-      +pRow('FORMAT',p.format||'')+pRow('TARGET',p.target||'')+pRow('HOOK',p.hook||'')
-      +pRow('SEQUENCES',(p.sequences||p.episodes||[]).map(function(e,i){return '<li><span>SEQ'+(i+1)+': '+e+'</span></li>';}).join(''),true)
-      +pRow('TOOLS',p.tools||'')+pRow('DIFF',p.diff||'')+pRow('REVENUE',p.revenue||'')
-      +pRow('THUMBNAIL',p.thumbnail||'')+pRow('SCHEDULE',p.schedule||'')
-      +'</div></div>';
-    document.getElementById('treatment-btn').style.display='flex';
-    document.getElementById('export-btn').style.display='block';
-    setStep(2);
-  }catch(e){
-    clearInterval(timer);
-    con.innerHTML='<div class="error-box">기획서 오류: '+e.message+'<br><br><button class="retry-btn" onclick="selectIdea(document.querySelector(\'.idea-card.selected\'),window._lastIdea)">다시 시도</button></div>';
+  while(attempt<MAX_RETRY){
+    attempt++;
+    con.innerHTML='<div class="loading-state"><div class="loader"></div><div class="loading-text" id="t2">'+(attempt>1?'['+attempt+'차 재생성] ':'')+'기획서 작성 중... 0s</div></div>';
+    var timer=startTimer('t2',(attempt>1?'['+attempt+'차 재생성] ':'')+'기획서 작성 중...');
+
+    try{
+      var raw=await callAPI(prompt,1500);
+      clearInterval(timer);
+      var p=parseJSON(raw,false);
+
+      // 자가평가
+      con.innerHTML='<div class="eval-bar checking"><div class="eval-dot" style="background:var(--blue)"></div><span>⟳ 자가평가 중...</span></div>';
+      await new Promise(function(r){setTimeout(r,400);}); // 짧은 딜레이로 UI 표시
+      var ev=evalPlan(p);
+
+      if(!bestPlan||ev.score>(bestEval?bestEval.score:0)){
+        bestPlan=p;bestEval=ev;
+      }
+
+      if(ev.pass||attempt>=MAX_RETRY){
+        // 확정 출력
+        currentPlan=bestPlan;
+        var evalHtml=renderEvalBar(bestEval,attempt);
+        con.innerHTML=evalHtml
+          +'<div class="plan-doc"><div class="plan-doc-header"><div class="plan-doc-title">'+(bestPlan.title||idea.title)+'</div><div class="plan-doc-subtitle">'+(bestPlan.subtitle||'')+'</div></div><div class="plan-doc-body">'
+          +pRow('FORMAT',bestPlan.format||'')+pRow('TARGET',bestPlan.target||'')+pRow('HOOK',bestPlan.hook||'')
+          +pRow('SEQUENCES',(bestPlan.sequences||bestPlan.episodes||[]).map(function(e,i){return '<li><span>SEQ'+(i+1)+': '+e+'</span></li>';}).join(''),true)
+          +pRow('TOOLS',bestPlan.tools||'')+pRow('DIFF',bestPlan.diff||'')+pRow('REVENUE',bestPlan.revenue||'')
+          +pRow('THUMBNAIL',bestPlan.thumbnail||'')+pRow('SCHEDULE',bestPlan.schedule||'')
+          +'</div></div>';
+        document.getElementById('treatment-btn').style.display='flex';
+        document.getElementById('export-btn').style.display='block';
+        setStep(2);
+        break;
+      } else {
+        // 재시도 — 미달 항목 피드백 포함
+        var failItems=Object.keys(ev.results).filter(function(k){return !ev.results[k].passed;}).map(function(k){return ev.results[k].label;});
+        con.innerHTML=renderEvalBar(ev,attempt);
+        prompt=[
+          '너는 유튜브 콘텐츠 PD야. 이전 기획서가 아래 항목에서 기준 미달이야. 개선해서 다시 작성해줘.',
+          '미달 항목: '+failItems.join(', '),
+          '콘텐츠명: '+idea.title,'컨셉: '+idea.desc,'포맷 규칙: '+fmtRule,
+          '중요: hook은 반드시 20자 이상 구체적으로. sequences는 5개. target과 revenue 구체적으로.',
+          '','JSON만 출력. 코드블록과 설명 없이.',
+          '{"title":"","subtitle":"","format":"","target":"","hook":"","sequences":["SEQ1:","SEQ2:","SEQ3:","SEQ4:","SEQ5:"],"tools":"","diff":"","revenue":"","thumbnail":"","schedule":""}'
+        ].join(NL);
+        await new Promise(function(r){setTimeout(r,300);});
+      }
+    }catch(e){
+      clearInterval(timer);
+      con.innerHTML='<div class="error-box">기획서 오류: '+e.message+'<br><br><button class="retry-btn" onclick="selectIdea(document.querySelector(\'.idea-card.selected\'),window._lastIdea)">다시 시도</button></div>';
+      break;
+    }
   }
 }
 
