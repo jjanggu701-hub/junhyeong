@@ -362,6 +362,9 @@ textarea{resize:vertical;min-height:70px;line-height:1.6}
       <div class="chip" onclick="toggleChip(this)">공감/밈</div>
       <div class="chip" onclick="toggleChip(this)">모큐멘터리</div>
       <div class="chip" onclick="toggleChip(this)">AI 뉴스/사건재연</div>
+      <div class="chip" onclick="toggleChip(this)">시사/뉴스</div>
+      <div class="chip" onclick="toggleChip(this)">경제/재테크</div>
+      <div class="chip" onclick="toggleChip(this)">스포츠</div>
       <div class="chip" id="chip-custom" onclick="toggleCustom(this)">직접입력</div>
     </div>
   </div>
@@ -375,6 +378,7 @@ textarea{resize:vertical;min-height:70px;line-height:1.6}
       <div class="chip active" onclick="toggleChip(this)">20대</div>
       <div class="chip active" onclick="toggleChip(this)">30대</div>
       <div class="chip" onclick="toggleChip(this)">40대</div>
+      <div class="chip" onclick="toggleChip(this)">50대</div>
     </div>
   </div>
   <div>
@@ -852,25 +856,34 @@ function parseJSON(raw, isArr){
   var cleaned=raw.split(bt+bt+bt+'json').join('').split(bt+bt+bt).join('').trim();
   var s=cleaned.indexOf(isArr?'[':'{');
   var e=cleaned.lastIndexOf(isArr?']':'}');
-  if(s===-1||e===-1) throw new Error('응답에서 JSON을 찾을 수 없습니다. 다시 시도해주세요.');
-  var jsonStr=cleaned.slice(s,e+1);
-  // 잘린 JSON 복구 시도
-  try{
-    return JSON.parse(jsonStr);
-  }catch(err){
-    // 배열이 잘린 경우: 마지막 완전한 객체까지만 파싱
-    if(isArr){
-      var lastComma=jsonStr.lastIndexOf('},');
-      if(lastComma>-1){
-        try{ return JSON.parse(jsonStr.slice(0,lastComma+1)+']'); }catch(e2){}
-      }
-      var lastBrace=jsonStr.lastIndexOf('}');
-      if(lastBrace>-1){
-        try{ return JSON.parse(jsonStr.slice(0,lastBrace+1)+']'); }catch(e3){}
-      }
-    }
-    throw new Error('JSON 파싱 오류: '+err.message+'. 다시 시도해주세요.');
+  if(s===-1) throw new Error('응답에서 JSON을 찾을 수 없습니다. 다시 시도해주세요.');
+  // e가 없으면 잘린 것 — 마지막 완전한 닫힘 위치까지만 사용
+  var jsonStr=e>-1?cleaned.slice(s,e+1):cleaned.slice(s);
+
+  // 1차: 그대로 파싱
+  try{ return JSON.parse(jsonStr); }catch(err){}
+
+  // 2차: 배열 복구
+  if(isArr){
+    try{ return JSON.parse(jsonStr.slice(0,jsonStr.lastIndexOf('},')+1)+']'); }catch(e2){}
+    try{ return JSON.parse(jsonStr.slice(0,jsonStr.lastIndexOf('}')+1)+']'); }catch(e3){}
   }
+
+  // 3차: 객체 복구 — sequences 배열이 잘린 경우 강제로 닫기
+  if(!isArr){
+    var fixed=jsonStr;
+    // 열린 배열 닫기
+    var openBrackets=(fixed.match(/\[/g)||[]).length-(fixed.match(/\]/g)||[]).length;
+    for(var i=0;i<openBrackets;i++) fixed+=']';
+    // 열린 객체 닫기
+    var openBraces=(fixed.match(/\{/g)||[]).length-(fixed.match(/\}/g)||[]).length;
+    for(var j=0;j<openBraces;j++) fixed+='}';
+    // 끝에 쉼표 있으면 제거
+    fixed=fixed.replace(/,\s*([\]}])/g,'$1');
+    try{ return JSON.parse(fixed); }catch(e4){}
+  }
+
+  throw new Error('JSON 파싱 오류. 다시 시도해주세요.');
 }
 
 // ── RENDER HELPERS ──
@@ -1108,13 +1121,33 @@ async function generate(){
   btn.disabled=false;btn.textContent='⚡ 기획 자동 생성';
 }
 
-// ── STEP 02 — 자가평가 루프 ──
+// ── STEP 02 — 자가평가 루프 (내용 품질 기준) ──
 var EVAL_CRITERIA={
-  hook:    {label:'첫 3초 훅',    check:function(p){return p.hook&&p.hook.length>10;}},
-  seq:     {label:'SEQ 구조',     check:function(p){return (p.sequences||[]).length>=4;}},
-  target:  {label:'타겟 명시',    check:function(p){return p.target&&p.target.length>2;}},
-  format:  {label:'포맷/길이',    check:function(p){return p.format&&p.format.length>2;}},
-  revenue: {label:'수익 구조',    check:function(p){return p.revenue&&p.revenue.length>5;}}
+  hook:    {label:'훅 구체성',   check:function(p){
+    // 길이 + 의문/감탄/숫자/행동 키워드 포함 여부
+    var h=p.hook||'';
+    var hasImpact=/[?!？！]|^\d|초|명|억|만|위|개|번|초만에|실제|충격|최초|단독/.test(h);
+    return h.length>15&&hasImpact;
+  }},
+  seq:     {label:'SEQ 완성도', check:function(p){
+    var seqs=p.sequences||[];
+    // 4개 이상이고 각 SEQ가 10자 이상
+    return seqs.length>=4&&seqs.every(function(s){return String(s).length>10;});
+  }},
+  target:  {label:'타겟 구체성', check:function(p){
+    var t=p.target||'';
+    // 연령대 + 특성 함께 명시
+    return t.length>10&&(/대|세/.test(t)||/층|자|인|팬/.test(t));
+  }},
+  revenue: {label:'수익 구체성', check:function(p){
+    var r=p.revenue||'';
+    // 구체적 수치나 수익 채널 명시
+    return r.length>15&&(/원|%|조회|광고|협찬|멤버십|굿즈|강의/.test(r));
+  }},
+  diff:    {label:'차별점 명시', check:function(p){
+    var d=p.diff||'';
+    return d.length>10;
+  }}
 };
 
 function evalPlan(p){
@@ -1188,7 +1221,7 @@ async function selectIdea(card,idea){
     var timer=startTimer('t2',(attempt>1?'['+attempt+'차 재생성] ':'')+'기획서 작성 중...');
 
     try{
-      var raw=await callAPI(prompt,1500);
+      var raw=await callAPI(prompt,2500);
       clearInterval(timer);
       var p=parseJSON(raw,false);
 
@@ -1241,7 +1274,39 @@ async function selectIdea(card,idea){
   }
 }
 
-// ── STEP 03 ──
+// ── STEP 03 — 자가평가 루프 + 연결성 검증 ──
+function evalTreatment(raw, plan){
+  var results={};var score=0;
+  var seqCount=(plan.sequences||[]).length;
+
+  // 1. 시퀀스 커버리지 — 기획서 SEQ가 모두 트리트먼트에 있는가
+  var seqCovered=true;
+  for(var i=1;i<=seqCount;i++){
+    if(raw.indexOf('SEQ'+i)<0&&raw.indexOf('EP'+i)<0){seqCovered=false;break;}
+  }
+  results.seqCover={label:'SEQ 전체 커버',passed:seqCovered};if(seqCovered)score++;
+
+  // 2. 씬 최소 개수 — 전체 S1~Sn이 5개 이상
+  var sceneMatches=(raw.match(/^S\d+\s*\|/gm)||[]).length;
+  results.sceneCount={label:'씬 최소 5개',passed:sceneMatches>=5};if(sceneMatches>=5)score++;
+
+  // 3. 훅 연결 — 기획서 hook 키워드가 SEQ1 근처에 있는가
+  var hookWords=(plan.hook||'').split(/[\s,]+/).filter(function(w){return w.length>2;}).slice(0,3);
+  var seq1Block=raw.slice(0,raw.indexOf('\n[SEQ2')>-1?raw.indexOf('\n[SEQ2'):raw.length/2);
+  var hookLinked=hookWords.length===0||hookWords.some(function(w){return seq1Block.indexOf(w)>-1;});
+  results.hookLink={label:'훅 연결성',passed:hookLinked};if(hookLinked)score++;
+
+  // 4. 러닝타임 표기 — 씬마다 시간 표기 있는가
+  var hasTime=raw.indexOf('초')>-1||raw.indexOf('분')>-1||raw.indexOf('s ')>-1||raw.indexOf('sec')>-1;
+  results.timeTag={label:'러닝타임 표기',passed:hasTime};if(hasTime)score++;
+
+  // 5. AI 프롬프트 힌트 — 영문 프롬프트 있는가
+  var hasEngPrompt=/[a-zA-Z]{4,}.*[a-zA-Z]{4,}/.test(raw);
+  results.engPrompt={label:'AI 프롬프트 힌트',passed:hasEngPrompt};if(hasEngPrompt)score++;
+
+  return{results:results,score:score,total:5,pass:score>=4};
+}
+
 async function generateTreatment(){
   if(!currentPlan){alert('기획서를 먼저 생성해주세요.');return;}
   var sec=document.getElementById('treatment-section');
@@ -1249,47 +1314,98 @@ async function generateTreatment(){
   sec.style.display='block';
   document.getElementById('script-btn').style.display='none';
   ['script-section','aiprompt-section','thumbnail-section'].forEach(function(id){document.getElementById(id).style.display='none';});
-  con.innerHTML='<div class="loading-state"><div class="loader"></div><div class="loading-text" id="t3">트리트먼트 작성 중... 0s</div></div>';
-  var timer=startTimer('t3','트리트먼트 작성 중...');
   sec.scrollIntoView({behavior:'smooth',block:'start'});
 
   var seqs=(currentPlan.sequences||currentPlan.episodes||[]).map(function(e,i){return 'SEQ'+(i+1)+': '+e;}).join(NL);
   var fmt=currentPlan.format||'';
   var totalTime=getRuntime()||(fmt.indexOf('숏폼')>-1?'60초~2분 이내':'3분~15분 기준');
   var modeNote=getMode()==='series'?'시리즈 중 1회차 기준으로 트리트먼트 작성.':'';
+  var MAX_RETRY=3;var attempt=0;var bestRaw=null;var bestEval=null;
 
-  var prompt=[
+  var basePrompt=[
     '유튜브 영상 1편의 트리트먼트를 작성해줘.',
-    '콘텐츠명: '+currentPlan.title,'포맷: '+fmt,'목표 러닝타임: '+totalTime,
-    modeNote,
-    '','시퀀스 구성:',seqs,'',
+    '콘텐츠명: '+currentPlan.title,
+    '포맷: '+fmt,'목표 러닝타임: '+totalTime,
+    '첫 3초 훅: '+currentPlan.hook,
+    modeNote,'','시퀀스 구성:',seqs,'',
     '규칙:',
-    '1. 위 시퀀스 순서대로 영상 1편의 흐름 구성',
-    '2. 씬 개수는 내용과 호흡에 맞게 자유롭게 결정. 목표 러닝타임에 맞게 밀도 조절.',
-    '3. 씬별 러닝타임은 전체 기준 안에서 내용에 따라 자연스럽게 배분. 짧은 씬과 긴 씬이 섞여도 좋아.',
-    '4. 마크다운 절대 사용 금지',
-    '5. 아래 형식만 사용','',
+    '1. 위 시퀀스를 모두 빠짐없이 작성. SEQ 번호 순서 유지.',
+    '2. 씬 개수는 내용과 러닝타임에 맞게 자유롭게. 최소 5씬 이상.',
+    '3. 씬별 러닝타임 반드시 표기 (예: 5초, 30초).',
+    '4. SEQ1 첫 씬은 반드시 기획서의 훅을 구현할 것.',
+    '5. 마크다운 절대 금지. 아래 형식만 사용.','',
     '[SEQ1] 시퀀스 이름',
     '흐름: 이 시퀀스의 역할과 분위기 2줄',
     'S1 | 장소/상황 | 씬 내용 | 러닝타임 | cinematic english prompt',
     'S2 | 장소/상황 | 씬 내용 | 러닝타임 | english prompt','',
     '[SEQ2] (동일 형식)','...(전체 시퀀스 작성)'
   ].filter(Boolean).join(NL);
+  var prompt=basePrompt;
 
-  try{
-    var raw=await callAPI(prompt,4000);
-    clearInterval(timer);
-    currentTreatment={title:currentPlan.title,format:fmt,raw:raw,sequences:(currentPlan.sequences||[])};
-    con.innerHTML=renderTreatment(raw,currentPlan.title);
-    document.getElementById('script-btn').style.display='flex';
-    setStep(3);
-  }catch(e){
-    clearInterval(timer);
-    con.innerHTML='<div class="error-box">트리트먼트 오류: '+e.message+'<br><br><button class="retry-btn" onclick="generateTreatment()">다시 시도</button></div>';
+  while(attempt<MAX_RETRY){
+    attempt++;
+    con.innerHTML='<div class="loading-state"><div class="loader"></div><div class="loading-text" id="t3">'+(attempt>1?'['+attempt+'차 재생성] ':'')+'트리트먼트 작성 중... 0s</div></div>';
+    var timer=startTimer('t3',(attempt>1?'['+attempt+'차 재생성] ':'')+'트리트먼트 작성 중...');
+    try{
+      var raw=await callAPI(prompt,4000);clearInterval(timer);
+      con.innerHTML='<div class="eval-bar checking"><div class="eval-dot" style="background:var(--blue)"></div><span>⟳ 자가평가 중 (기획서 연결성 검증)...</span></div>';
+      await new Promise(function(r){setTimeout(r,400);});
+      var ev=evalTreatment(raw,currentPlan);
+      if(!bestRaw||ev.score>(bestEval?bestEval.score:0)){bestRaw=raw;bestEval=ev;}
+      if(ev.pass||attempt>=MAX_RETRY){
+        currentTreatment={title:currentPlan.title,format:fmt,raw:bestRaw,sequences:(currentPlan.sequences||[])};
+        con.innerHTML=renderEvalBar(bestEval,attempt)+renderTreatment(bestRaw,currentPlan.title);
+        document.getElementById('script-btn').style.display='flex';
+        setStep(3);break;
+      } else {
+        var failItems=Object.keys(ev.results).filter(function(k){return !ev.results[k].passed;}).map(function(k){return ev.results[k].label;});
+        con.innerHTML=renderEvalBar(ev,attempt);
+        prompt=basePrompt+NL+NL+'[재시도 지시] 이전 결과에서 미달 항목: '+failItems.join(', ')+'. 이 항목을 반드시 보완해줘.';
+        await new Promise(function(r){setTimeout(r,300);});
+      }
+    }catch(e){
+      clearInterval(timer);
+      con.innerHTML='<div class="error-box">트리트먼트 오류: '+e.message+'<br><br><button class="retry-btn" onclick="generateTreatment()">다시 시도</button></div>';
+      break;
+    }
   }
 }
 
-// ── STEP 04 ──
+// ── STEP 04 — 자가평가 루프 + 트리트먼트 연결성 검증 ──
+function evalScript(raw, treatment){
+  var results={};var score=0;
+  var tRaw=treatment.raw||'';
+
+  // 1. 씬 커버리지 — 트리트먼트 씬이 대본에 모두 있는가
+  var tScenes=(tRaw.match(/^S\d+\s*\|/gm)||[]).length;
+  var sScenes=(raw.match(/^S\d+$/gm)||[]).length;
+  var sceneCover=sScenes>0&&sScenes>=tScenes*0.8;
+  results.sceneCover={label:'씬 커버리지',passed:sceneCover};if(sceneCover)score++;
+
+  // 2. 연출 표기 — 연출: 가 씬마다 있는가
+  var dirCount=(raw.match(/^연출:/gm)||[]).length;
+  results.direction={label:'연출 표기',passed:dirCount>=Math.max(1,sScenes*0.7)};
+  if(results.direction.passed)score++;
+
+  // 3. VO 또는 대사 — 내용이 있는가
+  var hasVO=(raw.match(/^VO:/gm)||[]).length>0;
+  var hasChar=(raw.match(/^CHARACTER/gm)||[]).length>0;
+  results.voOrChar={label:'VO/대사 존재',passed:hasVO||hasChar};if(hasVO||hasChar)score++;
+
+  // 4. 자막 표기
+  var hasCaption=(raw.match(/^자막:/gm)||[]).length>0;
+  results.caption={label:'자막 표기',passed:hasCaption};if(hasCaption)score++;
+
+  // 5. SEQ 구조 유지 — 트리트먼트 SEQ가 대본에 반영됐는가
+  var seqCount=(treatment.sequences||[]).length||1;
+  var seqInScript=0;
+  for(var i=1;i<=seqCount;i++){if(raw.indexOf('SEQ'+i)>-1||raw.indexOf('EP'+i)>-1)seqInScript++;}
+  results.seqMatch={label:'SEQ 구조 일치',passed:seqInScript>=seqCount*0.8};
+  if(results.seqMatch.passed)score++;
+
+  return{results:results,score:score,total:5,pass:score>=4};
+}
+
 async function generateScript(){
   if(!currentTreatment){alert('트리트먼트를 먼저 생성해주세요.');return;}
   var sec=document.getElementById('script-section');
@@ -1297,8 +1413,6 @@ async function generateScript(){
   sec.style.display='block';
   ['aiprompt-section','thumbnail-section'].forEach(function(id){document.getElementById(id).style.display='none';});
   document.getElementById('aiprompt-btn').style.display='none';
-  con.innerHTML='<div class="loading-state"><div class="loader"></div><div class="loading-text" id="t4">대본 작성 중... 0s</div></div>';
-  var timer=startTimer('t4','대본 작성 중...');
   sec.scrollIntoView({behavior:'smooth',block:'start'});
 
   var fmt=currentTreatment.format||'';
@@ -1306,38 +1420,56 @@ async function generateScript(){
   var hasChr=isCharacterGenre(genre);
   var voRule=fmt.indexOf('숏폼')>-1?'VO는 1~3문장. 짧고 임팩트 있게.':'VO는 3~6문장. 완성된 문장으로.';
   var chrRule=hasChr
-    ?'이 콘텐츠는 극중 인물이 등장해. 인물 대사는 반드시 CHARACTER [이름]: 대사 형식으로 써줘. VO는 나레이션 있을 때만.'
+    ?'이 콘텐츠는 극중 인물이 등장해. 인물 대사는 반드시 CHARACTER [이름]: 대사 형식으로. VO는 나레이션 있을 때만.'
     :'나레이션 위주 콘텐츠야. VO로 처리해줘.';
+  var MAX_RETRY=3;var attempt=0;var bestRaw=null;var bestEval=null;
 
-  var prompt=[
+  var basePrompt=[
     '유튜브 영상 1편의 대본을 작성해줘.',
     '콘텐츠명: '+currentTreatment.title,'포맷: '+fmt,'장르: '+genre.join(', '),'',
     chrRule,'',
     '=== 트리트먼트 ===',currentTreatment.raw,'=================','',
     '규칙:',
-    '1. 트리트먼트에 있는 시퀀스와 씬만 작성. 추가 금지.',
-    '2. '+voRule,
-    '3. 자막은 핵심 텍스트 3~5개를 쉼표로 구분',
-    '4. 연출은 카메라워크, 분위기, 조명까지 구체적으로',
-    '5. 마크다운 절대 사용 금지. 아래 형식만 사용.','',
+    '1. 트리트먼트의 모든 시퀀스와 씬을 빠짐없이 작성. 추가/삭제 금지.',
+    '2. 모든 씬에 반드시 연출: 표기.',
+    '3. '+voRule,
+    '4. 자막은 모든 씬에 핵심 텍스트 3~5개를 쉼표로 구분해서 반드시 표기.',
+    '5. 연출은 카메라워크, 분위기, 조명까지 구체적으로.',
+    '6. 마크다운 절대 사용 금지. 아래 형식만 사용.','',
     '[SEQ1] 시퀀스 이름',
-    'S1',
-    '연출: 카메라워크와 분위기',
-    'VO: 나레이션 문장들. (없으면 생략)',
+    'S1','연출: 카메라워크와 분위기',
+    'VO: 나레이션 (없으면 생략)',
     'CHARACTER [이름]: 대사 (인물 있을 때만)',
     '자막: 핵심텍스트1, 핵심텍스트2, 핵심텍스트3',
     '---','S2 (동일 형식)','','[SEQ2] (동일 형식)','...(전체 시퀀스 작성)'
   ].join(NL);
+  var prompt=basePrompt;
 
-  try{
-    var raw=await callAPI(prompt,6000);
-    clearInterval(timer);
-    con.innerHTML=renderScript(raw,currentTreatment.title);
-    document.getElementById('aiprompt-btn').style.display='flex';
-    setStep(4);
-  }catch(e){
-    clearInterval(timer);
-    con.innerHTML='<div class="error-box">대본 오류: '+e.message+'<br><br><button class="retry-btn" onclick="generateScript()">다시 시도</button></div>';
+  while(attempt<MAX_RETRY){
+    attempt++;
+    con.innerHTML='<div class="loading-state"><div class="loader"></div><div class="loading-text" id="t4">'+(attempt>1?'['+attempt+'차 재생성] ':'')+'대본 작성 중... 0s</div></div>';
+    var timer=startTimer('t4',(attempt>1?'['+attempt+'차 재생성] ':'')+'대본 작성 중...');
+    try{
+      var raw=await callAPI(prompt,6000);clearInterval(timer);
+      con.innerHTML='<div class="eval-bar checking"><div class="eval-dot" style="background:var(--blue)"></div><span>⟳ 자가평가 중 (트리트먼트 연결성 검증)...</span></div>';
+      await new Promise(function(r){setTimeout(r,400);});
+      var ev=evalScript(raw,currentTreatment);
+      if(!bestRaw||ev.score>(bestEval?bestEval.score:0)){bestRaw=raw;bestEval=ev;}
+      if(ev.pass||attempt>=MAX_RETRY){
+        con.innerHTML=renderEvalBar(bestEval,attempt)+renderScript(bestRaw,currentTreatment.title);
+        document.getElementById('aiprompt-btn').style.display='flex';
+        setStep(4);break;
+      } else {
+        var failItems=Object.keys(ev.results).filter(function(k){return !ev.results[k].passed;}).map(function(k){return ev.results[k].label;});
+        con.innerHTML=renderEvalBar(ev,attempt);
+        prompt=basePrompt+NL+NL+'[재시도 지시] 미달 항목: '+failItems.join(', ')+'. 반드시 보완해줘.';
+        await new Promise(function(r){setTimeout(r,300);});
+      }
+    }catch(e){
+      clearInterval(timer);
+      con.innerHTML='<div class="error-box">대본 오류: '+e.message+'<br><br><button class="retry-btn" onclick="generateScript()">다시 시도</button></div>';
+      break;
+    }
   }
 }
 
