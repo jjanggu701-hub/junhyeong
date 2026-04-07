@@ -59,7 +59,10 @@ textarea{resize:vertical;min-height:70px;line-height:1.6}
 .idea-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;cursor:pointer;transition:all .2s;position:relative}
 .idea-card:hover{border-color:var(--accent)}
 .idea-card.selected{border-color:var(--accent);background:#1a0808}
-.idea-card.selected::after{content:'선택됨';position:absolute;top:10px;right:12px;font-size:10px;color:var(--accent);font-family:'JetBrains Mono',monospace}
+.idea-card.selected::after{content:'선택됨';position:absolute;top:10px;right:38px;font-size:10px;color:var(--accent);font-family:'JetBrains Mono',monospace}
+.idea-star-btn{position:absolute;top:10px;right:10px;background:none;border:none;cursor:pointer;font-size:16px;color:var(--muted);transition:all .2s;padding:0;line-height:1}
+.idea-star-btn.saved{color:#fbbf24}
+.idea-star-btn:hover{transform:scale(1.2)}
 .idea-num{font-family:'Bebas Neue',sans-serif;font-size:12px;color:var(--accent);letter-spacing:1px;margin-bottom:3px}
 .idea-name{font-size:15px;font-weight:500;margin-bottom:5px}
 .idea-desc{font-size:13px;color:var(--muted);line-height:1.7}
@@ -220,6 +223,16 @@ textarea{resize:vertical;min-height:70px;line-height:1.6}
 
 /* ── 트렌드 분석 탭 ── */
 .tab-btn.trend-tab.active{background:var(--trend);color:#000}
+.tab-btn.saved-tab.active{background:#fbbf24;color:#000}
+.saved-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:300px;gap:12px;text-align:center;color:var(--muted)}
+.saved-empty-icon{font-size:40px;opacity:.3}
+.saved-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:10px;position:relative}
+.saved-card-actions{display:flex;gap:8px;margin-top:10px}
+.saved-use-btn{background:var(--accent);color:white;border:none;border-radius:5px;padding:6px 14px;font-size:12px;font-family:'Noto Sans KR',sans-serif;cursor:pointer;transition:background .2s}
+.saved-use-btn:hover{background:#e02020}
+.saved-del-btn{background:none;border:1px solid var(--border);color:var(--muted);border-radius:5px;padding:6px 12px;font-size:11px;font-family:'JetBrains Mono',monospace;cursor:pointer;transition:all .2s}
+.saved-del-btn:hover{border-color:var(--accent);color:var(--accent)}
+.saved-at{font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:4px}
 .content-area.trend-mode{padding:0;overflow:hidden}
 .trend-layout{display:flex;flex-direction:column;height:calc(100vh - 95px)}
 .trend-search-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 24px;display:flex;flex-direction:column;gap:12px;flex-shrink:0}
@@ -370,6 +383,7 @@ textarea{resize:vertical;min-height:70px;line-height:1.6}
       <button class="tab-btn active" onclick="switchTab('generator')">기획 생성기</button>
       <button class="tab-btn trend-tab" onclick="switchTab('trends')">📊 트렌드 분석</button>
       <button class="tab-btn" onclick="switchTab('templates')">프롬프트 템플릿</button>
+      <button class="tab-btn saved-tab" id="tab-btn-saved" onclick="switchTab('saved')">★ 저장됨</button>
     </div>
     <div style="position:relative;display:none" id="export-wrap">
       <button class="export-btn" id="export-btn" onclick="toggleExportMenu()">↓ 내보내기 ▾</button>
@@ -728,6 +742,18 @@ NEG: (네거티브 프롬프트 영어)
     </div>
   </div>
 </div>
+
+<!-- ── 저장됨 탭 ── -->
+<div class="tab-content" id="tab-saved" style="padding:24px">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+    <div>
+      <div style="font-size:16px;font-weight:700;margin-bottom:3px">★ 저장된 아이디어</div>
+      <div style="font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace" id="saved-count-label"></div>
+    </div>
+    <button onclick="clearAllSaved()" id="saved-clear-btn" style="display:none;background:none;border:1px solid #5a1010;color:#ff7070;border-radius:5px;padding:6px 12px;font-size:11px;font-family:'JetBrains Mono',monospace;cursor:pointer">전체 삭제</button>
+  </div>
+  <div id="saved-list"></div>
+</div>
 </main>
 
 <!-- ── 채널 프로필 모달 ── -->
@@ -767,6 +793,7 @@ const appState = {
   prodType: 'ad',
   profiles: JSON.parse(localStorage.getItem('yplan_profiles')||'[]'),
   activeProfileId: localStorage.getItem('yplan_active_profile')||'',
+  savedIdeas: JSON.parse(localStorage.getItem('yplan_saved_ideas')||'[]'),
   stepHistories: {
     plan:      {data:[],idx:-1,barId:'plan-history-bar',conId:'plan-container'},
     treatment: {data:[],idx:-1,barId:'treatment-history-bar',conId:'treatment-container'},
@@ -911,10 +938,10 @@ function checkKey(){
   }
 }
 function switchTab(name){
-  var tabs=['generator','trends','templates'];
+  var tabs=['generator','trends','templates','saved'];
   var btns=document.querySelectorAll('.tab-btn');
   tabs.forEach(function(t,i){
-    btns[i].classList.toggle('active',t===name);
+    if(btns[i])btns[i].classList.toggle('active',t===name);
     var el=document.getElementById('tab-'+t);
     if(el)el.classList.toggle('active',t===name);
   });
@@ -933,6 +960,7 @@ function switchTab(name){
       document.getElementById('export-wrap').style.display='block';
       setStep(appState.plan._step||2);
     }
+    if(name==='saved') renderSavedTab();
   }
 }
 function toggleTrendChip(el){ el.classList.toggle('active'); }
@@ -1646,6 +1674,7 @@ function renderIdeas(ideas, evalResults, newsInput, failCount){
     var sourceTag=idea.source
       ?'<div style="margin-top:6px;font-size:10px;color:var(--success);font-family:JetBrains Mono,monospace;background:#0a1a0a;border:1px solid #1a3a1a;padding:3px 8px;border-radius:3px">📰 '+idea.source+'</div>'
       :'';
+    var isSaved=appState.savedIdeas.some(function(s){return s.title===idea.title;});
     var card=document.createElement('div');
     card.className='idea-card';
     card.innerHTML='<div class="idea-num">IDEA '+(idea.num||String(i+1).padStart(2,'0'))+'</div>'
@@ -1655,15 +1684,123 @@ function renderIdeas(ideas, evalResults, newsInput, failCount){
       +'<div class="idea-meta" style="margin-top:6px">'
       +'<span>난이도: <b>'+idea.diff+'</b></span>'
       +'<span style="color:#EF9F27">성장성: <b style="color:#EF9F27">'+idea.growth+'</b></span>'
-      +'</div>';
+      +'</div>'
+      +'<button class="idea-star-btn'+(isSaved?' saved':'')+'" title="'+(isSaved?'저장 해제':'즐겨찾기 저장')+'">'+(isSaved?'★':'☆')+'</button>';
     card.onclick=function(){
       if(card.classList.contains('selected')){
         if(!confirm(idea.title+' 기획서를 다시 생성할까요?\n현재까지 생성된 내용이 초기화됩니다.')) return;
       }
       selectIdea(card,idea);
     };
+    var starBtn=card.querySelector('.idea-star-btn');
+    starBtn.onclick=function(e){e.stopPropagation();toggleSaveIdea(idea,starBtn);};
     con.appendChild(card);
   });
+}
+
+// ── 즐겨찾기 저장 ──
+function saveSavedIdeasToStorage(){
+  localStorage.setItem('yplan_saved_ideas',JSON.stringify(appState.savedIdeas));
+}
+function toggleSaveIdea(idea, btn){
+  var idx=appState.savedIdeas.findIndex(function(s){return s.title===idea.title;});
+  if(idx>-1){
+    appState.savedIdeas.splice(idx,1);
+    btn.textContent='☆'; btn.classList.remove('saved'); btn.title='즐겨찾기 저장';
+  } else {
+    var entry={title:idea.title,desc:idea.desc||'',diff:idea.diff||'',growth:idea.growth||'',num:idea.num||'',savedAt:new Date().toISOString()};
+    appState.savedIdeas.unshift(entry);
+    if(appState.savedIdeas.length>20) appState.savedIdeas.pop();
+    btn.textContent='★'; btn.classList.add('saved'); btn.title='저장 해제';
+  }
+  saveSavedIdeasToStorage();
+  // 저장됨 탭 카운트 배지 갱신
+  var tabBtn=document.getElementById('tab-btn-saved');
+  if(tabBtn) tabBtn.textContent='★ 저장됨'+(appState.savedIdeas.length>0?' ('+appState.savedIdeas.length+')':'');
+}
+function renderSavedTab(){
+  var list=document.getElementById('saved-list');
+  var label=document.getElementById('saved-count-label');
+  var clearBtn=document.getElementById('saved-clear-btn');
+  var items=appState.savedIdeas;
+  label.textContent=items.length+'개 저장됨 (최대 20개)';
+  clearBtn.style.display=items.length>0?'block':'none';
+  if(items.length===0){
+    list.innerHTML='<div class="saved-empty"><div class="saved-empty-icon">☆</div><div style="font-size:14px;font-weight:500">저장된 아이디어가 없습니다</div><div style="font-size:13px;margin-top:4px">아이디어 카드의 ★ 버튼으로 저장하세요</div></div>';
+    return;
+  }
+  list.innerHTML='';
+  items.forEach(function(idea,i){
+    var d=new Date(idea.savedAt);
+    var ts=(d.getMonth()+1)+'/'+(d.getDate())+' '+(d.getHours()+'').padStart(2,'0')+':'+(d.getMinutes()+'').padStart(2,'0');
+    var card=document.createElement('div');
+    card.className='saved-card';
+    card.innerHTML='<div class="idea-num">IDEA '+(idea.num||String(i+1).padStart(2,'0'))+'</div>'
+      +'<div class="idea-name">'+idea.title+'</div>'
+      +'<div class="idea-desc">'+idea.desc+'</div>'
+      +'<div class="idea-meta" style="margin-top:6px">'
+      +'<span>난이도: <b>'+idea.diff+'</b></span>'
+      +'<span style="color:#EF9F27">성장성: <b style="color:#EF9F27">'+idea.growth+'</b></span>'
+      +'</div>'
+      +'<div class="saved-card-actions">'
+      +'<button class="saved-use-btn">기획서 생성</button>'
+      +'<button class="saved-del-btn">삭제</button>'
+      +'</div>'
+      +'<div class="saved-at">저장: '+ts+'</div>';
+    card.querySelector('.saved-use-btn').onclick=function(){
+      switchTab('generator');
+      // 임시 카드 생성 후 selectIdea 호출
+      var tmpCard=document.createElement('div');
+      tmpCard.className='idea-card';
+      var con=document.getElementById('ideas-container');
+      // 기존 아이디어 카드 중 같은 제목 찾기
+      var existing=Array.from(con.querySelectorAll('.idea-card')).find(function(c){
+        return c.querySelector('.idea-name')&&c.querySelector('.idea-name').textContent===idea.title;
+      });
+      if(existing){existing.click();}
+      else{
+        // 결과 영역이 없으면 직접 selectIdea
+        document.getElementById('empty-state').style.display='none';
+        document.getElementById('result-area').style.display='block';
+        con.innerHTML='';
+        tmpCard.innerHTML='<div class="idea-num">IDEA '+(idea.num||'01')+'</div>'
+          +'<div class="idea-name">'+idea.title+'</div>'
+          +'<div class="idea-desc">'+idea.desc+'</div>'
+          +'<div class="idea-meta" style="margin-top:6px">'
+          +'<span>난이도: <b>'+idea.diff+'</b></span>'
+          +'<span style="color:#EF9F27">성장성: <b style="color:#EF9F27">'+idea.growth+'</b></span>'
+          +'</div>';
+        con.appendChild(tmpCard);
+        selectIdea(tmpCard,idea);
+      }
+    };
+    card.querySelector('.saved-del-btn').onclick=function(){
+      appState.savedIdeas.splice(i,1);
+      saveSavedIdeasToStorage();
+      // 아이디어 카드의 ★ 버튼도 갱신
+      document.querySelectorAll('.idea-star-btn').forEach(function(btn){
+        var nameEl=btn.closest('.idea-card');
+        if(nameEl&&nameEl.querySelector('.idea-name')&&nameEl.querySelector('.idea-name').textContent===idea.title){
+          btn.textContent='☆'; btn.classList.remove('saved'); btn.title='즐겨찾기 저장';
+        }
+      });
+      var tabBtn=document.getElementById('tab-btn-saved');
+      if(tabBtn) tabBtn.textContent='★ 저장됨'+(appState.savedIdeas.length>0?' ('+appState.savedIdeas.length+')':'');
+      renderSavedTab();
+    };
+    list.appendChild(card);
+  });
+}
+function clearAllSaved(){
+  if(!confirm('저장된 아이디어 '+appState.savedIdeas.length+'개를 모두 삭제할까요?')) return;
+  appState.savedIdeas=[];
+  saveSavedIdeasToStorage();
+  document.querySelectorAll('.idea-star-btn.saved').forEach(function(btn){
+    btn.textContent='☆'; btn.classList.remove('saved'); btn.title='즐겨찾기 저장';
+  });
+  var tabBtn=document.getElementById('tab-btn-saved');
+  if(tabBtn) tabBtn.textContent='★ 저장됨';
+  renderSavedTab();
 }
 
 async function generate(){
@@ -2530,6 +2667,10 @@ function copyPrompt(id,btn){
 
 // ── 초기화 ──
 renderProfileSelect();
+(function initSavedBadge(){
+  var tabBtn=document.getElementById('tab-btn-saved');
+  if(tabBtn&&appState.savedIdeas.length>0) tabBtn.textContent='★ 저장됨 ('+appState.savedIdeas.length+')';
+})();
 </script>
 </body>
 </html>
