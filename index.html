@@ -737,14 +737,32 @@ NEG: 피해야할 요소 (영어 20~30 words)</div>
 </div>
 
 <script>
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// SECTION: 전역 변수 선언부
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 var API = 'https://api.anthropic.com/v1/messages';
 var NL = '\n';
-var currentPlan = null;
-var currentTreatment = null;
+const appState = {
+  plan: null,
+  treatment: null,
+  wsEnabled: false,
+  appMode: 'youtube',
+  prodType: 'ad',
+  profiles: JSON.parse(localStorage.getItem('yplan_profiles')||'[]'),
+  activeProfileId: localStorage.getItem('yplan_active_profile')||'',
+  stepHistories: {
+    plan:      {data:[],idx:-1,barId:'plan-history-bar',conId:'plan-container'},
+    treatment: {data:[],idx:-1,barId:'treatment-history-bar',conId:'treatment-container'},
+    script:    {data:[],idx:-1,barId:'script-history-bar',conId:'script-container'},
+    aiprompt:  {data:[],idx:-1,barId:'aiprompt-history-bar',conId:'aiprompt-container'},
+    thumbnail: {data:[],idx:-1,barId:'thumbnail-history-bar',conId:'thumbnail-container'}
+  }
+};
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// SECTION: 앱 모드
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // ── 앱 모드 ──
-var appMode = 'youtube';
-var prodSub = 'ad';
 var PROD_GENRES = {
   ad:    ['15초 광고','30초 광고','60초 광고','브랜드 필름','제품 광고','감성 스토리','유머 바이럴','기업 홍보','SNS 광고'],
   mv:    ['뮤직비디오','퍼포먼스 MV','시네마틱 MV','스토리 MV','아이돌 MV','인디 감성 MV','애니메이션 MV'],
@@ -759,7 +777,7 @@ var PROD_PERSONAS = {
   drama: '너는 넷플릭스·왓챠·웨이브 히트작을 만들어온 OTT 드라마 PD야. 시청자를 끌어당기는 스토리 구조 설계 전문가로서'
 };
 function setAppMode(mode){
-  appMode=mode;
+  appState.appMode=mode;
   document.getElementById('tab-yt').classList.toggle('active',mode==='youtube');
   document.getElementById('tab-prod').classList.toggle('active',mode==='production');
   document.getElementById('prod-bar').classList.toggle('on',mode==='production');
@@ -767,12 +785,12 @@ function setAppMode(mode){
   else{renderYTGenreChips();document.getElementById('gen-btn').textContent='⚡ 기획 자동 생성';}
 }
 function setProdSub(sub){
-  prodSub=sub;
+  appState.prodType=sub;
   ['ad','mv','vcr','drama'].forEach(function(s){document.getElementById('psub-'+s).classList.toggle('active',s===sub);});
   renderProdGenreChips();
 }
 function renderProdGenreChips(){
-  var list=PROD_GENRES[prodSub]||[];
+  var list=PROD_GENRES[appState.prodType]||[];
   var con=document.getElementById('chips-genre'); con.innerHTML='';
   list.forEach(function(g,i){var c=document.createElement('div');c.className='chip'+(i===0?' active':'');c.textContent=g;c.onclick=function(){toggleChip(c);};con.appendChild(c);});
   var cc=document.createElement('div');cc.className='chip';cc.id='chip-custom';cc.textContent='직접입력';cc.onclick=function(){toggleCustom(cc);};con.appendChild(cc);
@@ -783,35 +801,36 @@ function renderYTGenreChips(){
   var cc=document.createElement('div');cc.className='chip';cc.id='chip-custom';cc.textContent='직접입력';cc.onclick=function(){toggleCustom(cc);};con.appendChild(cc);
 }
 function getPersona(){
-  if(appMode==='production') return PROD_PERSONAS[prodSub]||'너는 영상 프로덕션 전문가야.';
+  if(appState.appMode==='production') return PROD_PERSONAS[appState.prodType]||'너는 영상 프로덕션 전문가야.';
   return '너는 최고의 유튜브 콘텐츠 PD야.';
 }
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// SECTION: 채널 프로필
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // ── 채널 프로필 ──
-var profiles=JSON.parse(localStorage.getItem('yplan_profiles')||'[]');
-var activeProfileId=localStorage.getItem('yplan_active_profile')||'';
 var _editingPfId=null;
-function saveProfilesToStorage(){localStorage.setItem('yplan_profiles',JSON.stringify(profiles));}
+function saveProfilesToStorage(){localStorage.setItem('yplan_profiles',JSON.stringify(appState.profiles));}
 function renderProfileSelect(){
   var sel=document.getElementById('profile-select');
   sel.innerHTML='<option value="">-- 프로필 없음 --</option>';
-  profiles.forEach(function(p){var o=document.createElement('option');o.value=p.id;o.textContent=p.name;if(p.id===activeProfileId)o.selected=true;sel.appendChild(o);});
+  appState.profiles.forEach(function(p){var o=document.createElement('option');o.value=p.id;o.textContent=p.name;if(p.id===appState.activeProfileId)o.selected=true;sel.appendChild(o);});
   var eb=document.getElementById('profile-edit-btn');
-  if(eb)eb.style.display=activeProfileId?'block':'none';
+  if(eb)eb.style.display=appState.activeProfileId?'block':'none';
   updateProfileBadge();
 }
 function updateProfileBadge(){
   var b=document.getElementById('profile-badge'); if(!b)return;
-  var p=profiles.find(function(x){return x.id===activeProfileId;});
+  var p=appState.profiles.find(function(x){return x.id===appState.activeProfileId;});
   if(p){b.className='profile-badge on';b.textContent='✓ '+p.name+(p.genre?' · '+p.genre:'')+(p.tone?' · '+p.tone:'');}
   else{b.className='profile-badge';b.textContent='';}
 }
 function applyProfile(id){
-  activeProfileId=id;localStorage.setItem('yplan_active_profile',id);
+  appState.activeProfileId=id;localStorage.setItem('yplan_active_profile',id);
   var eb=document.getElementById('profile-edit-btn');if(eb)eb.style.display=id?'block':'none';
   updateProfileBadge();
 }
-function getActiveProfile(){return profiles.find(function(p){return p.id===activeProfileId;})||null;}
+function getActiveProfile(){return appState.profiles.find(function(p){return p.id===appState.activeProfileId;})||null;}
 function getChannelContext(){
   var p=getActiveProfile(); if(!p)return '';
   var L=['=== 채널 프로필 컨텍스트 ==='];
@@ -830,8 +849,8 @@ function getChannelContext(){
 function openProfileModal(mode){
   _editingPfId=null;
   var db=document.getElementById('modal-del-btn');
-  if(mode==='edit'&&activeProfileId){
-    var p=profiles.find(function(x){return x.id===activeProfileId;}); if(!p)return;
+  if(mode==='edit'&&appState.activeProfileId){
+    var p=appState.profiles.find(function(x){return x.id===appState.activeProfileId;}); if(!p)return;
     _editingPfId=p.id;
     document.getElementById('modal-title').textContent='채널 프로필 편집'; db.style.display='block';
     document.getElementById('pf-name').value=p.name||''; document.getElementById('pf-genre').value=p.genre||'';
@@ -852,14 +871,14 @@ function saveProfile(){
     target:document.getElementById('pf-target').value.trim(), goodPattern:document.getElementById('pf-good').value.trim(),
     avoidDirection:document.getElementById('pf-avoid').value.trim(), uploadCycle:document.getElementById('pf-cycle').value.trim(),
     benchmark:document.getElementById('pf-bench').value.trim()};
-  if(_editingPfId){var i=profiles.findIndex(function(x){return x.id===_editingPfId;});if(i>-1)profiles[i]=data;}
-  else{profiles.push(data);activeProfileId=data.id;localStorage.setItem('yplan_active_profile',activeProfileId);}
+  if(_editingPfId){var i=appState.profiles.findIndex(function(x){return x.id===_editingPfId;});if(i>-1)appState.profiles[i]=data;}
+  else{appState.profiles.push(data);appState.activeProfileId=data.id;localStorage.setItem('yplan_active_profile',appState.activeProfileId);}
   saveProfilesToStorage(); renderProfileSelect(); closeProfileModal();
 }
 function deleteProfile(){
   if(!_editingPfId||!confirm('이 프로필을 삭제할까요?'))return;
-  profiles=profiles.filter(function(p){return p.id!==_editingPfId;});
-  if(activeProfileId===_editingPfId){activeProfileId='';localStorage.setItem('yplan_active_profile','');}
+  appState.profiles=appState.profiles.filter(function(p){return p.id!==_editingPfId;});
+  if(appState.activeProfileId===_editingPfId){appState.activeProfileId='';localStorage.setItem('yplan_active_profile','');}
   saveProfilesToStorage(); renderProfileSelect(); closeProfileModal();
 }
 
@@ -893,9 +912,9 @@ function switchTab(name){
   } else {
     if(layout)layout.classList.remove('full-width');
     if(con){con.classList.remove('trend-mode');}
-    if(name==='generator'&&currentPlan){
+    if(name==='generator'&&appState.plan){
       document.getElementById('export-wrap').style.display='block';
-      setStep(currentPlan._step||2);
+      setStep(appState.plan._step||2);
     }
   }
 }
@@ -1028,7 +1047,7 @@ function useInGenerator(title,desc){
   document.getElementById('empty-state').style.display='none';
   document.getElementById('result-area').style.display='block';
   document.getElementById('export-wrap').style.display='none';
-  hideAll();currentPlan=null;currentTreatment=null;
+  hideAll();appState.plan=null;appState.treatment=null;
   var con=document.getElementById('ideas-container');
   document.getElementById('count-badge').textContent='트렌드 선택';
   con.innerHTML='';
@@ -1082,16 +1101,18 @@ function isCharacterGenre(genre){
   return g.indexOf('드라마')>-1||g.indexOf('예능')>-1||g.indexOf('버라이어티')>-1||g.indexOf('광고')>-1||g.indexOf('모큐멘터리')>-1||g.indexOf('스토리')>-1||g.indexOf('바이럴')>-1;
 }
 
-var wsEnabled=false;
 function toggleWebSearch(){
-  wsEnabled=!wsEnabled;
+  appState.wsEnabled=!appState.wsEnabled;
   var wrap=document.getElementById('ws-toggle');
   var txt=document.getElementById('ws-toggle-text');
-  wrap.classList.toggle('on',wsEnabled);
-  txt.textContent=wsEnabled?'웹 검색 ON':'웹 검색 OFF';
+  wrap.classList.toggle('on',appState.wsEnabled);
+  txt.textContent=appState.wsEnabled?'웹 검색 ON':'웹 검색 OFF';
 }
-function isWebSearchOn(){ return wsEnabled; }
+function isWebSearchOn(){ return appState.wsEnabled; }
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// SECTION: API 호출
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 async function callAPI(prompt, maxTokens, useSearch){
   var body={model:'claude-sonnet-4-20250514',max_tokens:maxTokens,messages:[{role:'user',content:prompt}]};
   if(useSearch){
@@ -1141,6 +1162,9 @@ function parseJSON(raw, isArr){
   throw new Error('JSON 파싱 오류. 다시 시도해주세요.');
 }
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// SECTION: 렌더링 함수
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // ── RENDER HELPERS ──
 function isSeqLine(line){
   return (line.charAt(0)==='['&&(line.indexOf('SEQ')>-1||line.indexOf('EP')>-1)&&line.indexOf(']')>-1)||
@@ -1403,11 +1427,14 @@ function renderThumbnail(raw, title){
   return h+'</div>';
 }
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// SECTION: STEP 01 — 기획 아이디어 생성
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // ── STEP 01 — 함수 분리 + 재평가 루프 완결 ──
 
 function buildIdeaPrompt(count, fmt, allGenre, target, keyword, newsInput){
   var persona=getPersona(); var ctx=getChannelContext();
-  var typeLabel=appMode==='production'?'프로덕션 콘텐츠':'유튜브 콘텐츠';
+  var typeLabel=appState.appMode==='production'?'프로덕션 콘텐츠':'유튜브 콘텐츠';
   if(newsInput){
     return [
       persona+' 아래 실제 사건/뉴스를 기반으로 '+typeLabel+' 아이디어 '+count+'개를 만들어줘.',
@@ -1437,7 +1464,7 @@ async function generateIdeas(count, fmt, allGenre, target, keyword, newsInput){
 
 async function evaluateIdeas(ideas, fmt, allGenre, target){
   var ctx=getChannelContext();
-  var modeNote=appMode==='production'?'프로덕션 모드 ('+({ad:'광고',mv:'뮤직비디오',vcr:'오프닝/VCR',drama:'드라마'}[prodSub]||prodSub)+') 기준으로 평가.':'';
+  var modeNote=appState.appMode==='production'?'프로덕션 모드 ('+({ad:'광고',mv:'뮤직비디오',vcr:'오프닝/VCR',drama:'드라마'}[appState.prodType]||appState.prodType)+') 기준으로 평가.':'';
   var evalPrompt=[
     '너는 영상 콘텐츠 평가 전문가야. 아래 아이디어들을 5가지 기준으로 각각 1~5점 채점해줘.',
     modeNote,
@@ -1585,7 +1612,7 @@ async function generate(){
   document.getElementById('result-area').style.display='block';
   document.getElementById('export-wrap').style.display='none';
   document.getElementById('step-indicator').classList.remove('visible');
-  hideAll();currentPlan=null;currentTreatment=null;
+  hideAll();appState.plan=null;appState.treatment=null;
 
   var con=document.getElementById('ideas-container');
 
@@ -1626,6 +1653,9 @@ async function generate(){
   btn.disabled=false;btn.textContent='⚡ 기획 자동 생성';
 }
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// SECTION: STEP 02 — 기획서 자가평가
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // ── STEP 02 — 자가평가 루프 (내용 품질 기준) ──
 var EVAL_CRITERIA={
   hook:    {label:'훅 구체성',   check:function(p){
@@ -1652,6 +1682,15 @@ var EVAL_CRITERIA={
   diff:    {label:'차별점 명시', check:function(p){
     var d=p.diff||'';
     return d.length>10;
+  }},
+  channelFit:{label:'채널 적합성', check:function(p){
+    var pf=typeof getActiveProfile==='function'?getActiveProfile():null;
+    if(!pf)return true; // 프로필 없으면 패스
+    var text=(p.title||'')+(p.hook||'')+(p.target||'');
+    var toneWords=(pf.tone||'').split(/[,\s]+/).filter(function(w){return w.length>1;});
+    var targetWords=(pf.target||'').split(/[,\s]+/).filter(function(w){return w.length>1;});
+    var combined=toneWords.concat(targetWords);
+    return combined.length===0||combined.some(function(w){return text.indexOf(w)>-1;});
   }}
 };
 
@@ -1694,7 +1733,7 @@ async function selectIdea(card,idea){
   }
   document.querySelectorAll('.idea-card').forEach(function(c){c.classList.remove('selected');});
   card.classList.add('selected');window._lastIdea=idea;
-  hideAll();currentPlan=null;currentTreatment=null;
+  hideAll();appState.plan=null;appState.treatment=null;
   resetAllHistories();
 
   var sec=document.getElementById('plan-section');
@@ -1757,7 +1796,7 @@ async function selectIdea(card,idea){
 
       if(ev.pass||attempt>=MAX_RETRY){
         // 확정 출력
-        currentPlan=bestPlan;
+        appState.plan=bestPlan;
         var evalHtml=renderEvalBar(bestEval,attempt);
         var planHtml=evalHtml
           +'<div class="plan-doc"><div class="plan-doc-header"><div class="plan-doc-title">'+(bestPlan.title||idea.title)+'</div><div class="plan-doc-subtitle">'+(bestPlan.subtitle||'')+'</div></div><div class="plan-doc-body">'
@@ -1798,6 +1837,9 @@ async function selectIdea(card,idea){
   }
 }
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// SECTION: STEP 03 — 트리트먼트
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // ── STEP 03 — 자가평가 루프 + 연결성 검증 ──
 function evalTreatment(raw, plan){
   var results={};var score=0;
@@ -1828,11 +1870,17 @@ function evalTreatment(raw, plan){
   var hasEngPrompt=/[a-zA-Z]{4,}.*[a-zA-Z]{4,}/.test(raw);
   results.engPrompt={label:'AI 프롬프트 힌트',passed:hasEngPrompt};if(hasEngPrompt)score++;
 
-  return{results:results,score:score,total:5,pass:score>=4};
+  // 6. 감정선 연결 — SEQ 간 감정 키워드 전환이 있는가
+  var emotionWords=/긴장|반전|절정|해소|공감|충격|감동|웃음|공포|설렘|분노|슬픔|희망/;
+  var emotionSeqBlocks=(raw.match(/\[SEQ\d+\][\s\S]*?(?=\[SEQ\d+\]|$)/g)||[]);
+  var hasEmotionArc=emotionSeqBlocks.length>=2&&emotionSeqBlocks.filter(function(b){return emotionWords.test(b);}).length>=2;
+  results.emotionArc={label:'감정선 연결',passed:hasEmotionArc};if(hasEmotionArc)score++;
+
+  return{results:results,score:score,total:6,pass:score>=4};
 }
 
 async function generateTreatment(){
-  if(!currentPlan){alert('기획서를 먼저 생성해주세요.');return;}
+  if(!appState.plan){alert('기획서를 먼저 생성해주세요.');return;}
   if(checkExistingContent('treatment-container')){
     if(!confirm('새 트리트먼트를 생성하면 현재 내용이 히스토리로 저장됩니다.\n계속할까요?')) return;
   }
@@ -1843,8 +1891,8 @@ async function generateTreatment(){
   ['script-section','aiprompt-section','thumbnail-section'].forEach(function(id){document.getElementById(id).style.display='none';});
   sec.scrollIntoView({behavior:'smooth',block:'start'});
 
-  var seqs=(currentPlan.sequences||currentPlan.episodes||[]).map(function(e,i){return 'SEQ'+(i+1)+': '+e;}).join(NL);
-  var fmt=currentPlan.format||'';
+  var seqs=(appState.plan.sequences||appState.plan.episodes||[]).map(function(e,i){return 'SEQ'+(i+1)+': '+e;}).join(NL);
+  var fmt=appState.plan.format||'';
   var totalTime=getRuntime()||(fmt.indexOf('숏폼')>-1?'60초~2분 이내':'3분~15분 기준');
   var modeNote=getMode()==='series'?'시리즈 중 1회차 기준으로 트리트먼트 작성.':'';
   var MAX_RETRY=3;var attempt=0;var bestRaw=null;var bestEval=null;
@@ -1852,9 +1900,9 @@ async function generateTreatment(){
   var basePrompt=[
     getPersona()+' 영상 1편의 트리트먼트를 작성해줘.',
     getChannelContext(),
-    '콘텐츠명: '+currentPlan.title,
+    '콘텐츠명: '+appState.plan.title,
     '포맷: '+fmt,'목표 러닝타임: '+totalTime,
-    '첫 3초 훅: '+currentPlan.hook,
+    '첫 3초 훅: '+appState.plan.hook,
     modeNote,'','시퀀스 구성:',seqs,'',
     '규칙:',
     '1. 위 시퀀스를 모두 빠짐없이 작성. SEQ 번호 순서 유지.',
@@ -1878,11 +1926,11 @@ async function generateTreatment(){
       var raw=await callAPI(prompt,4000);clearInterval(timer);
       con.innerHTML='<div class="eval-bar checking"><div class="eval-dot" style="background:var(--blue)"></div><span>⟳ 자가평가 중 (기획서 연결성 검증)...</span></div>';
       await new Promise(function(r){setTimeout(r,400);});
-      var ev=evalTreatment(raw,currentPlan);
+      var ev=evalTreatment(raw,appState.plan);
       if(!bestRaw||ev.score>(bestEval?bestEval.score:0)){bestRaw=raw;bestEval=ev;}
       if(ev.pass||attempt>=MAX_RETRY){
-        currentTreatment={title:currentPlan.title,format:fmt,raw:bestRaw,sequences:(currentPlan.sequences||[])};
-        var treatHtml=renderEvalBar(bestEval,attempt)+renderTreatment(bestRaw,currentPlan.title);
+        appState.treatment={title:appState.plan.title,format:fmt,raw:bestRaw,sequences:(appState.plan.sequences||[])};
+        var treatHtml=renderEvalBar(bestEval,attempt)+renderTreatment(bestRaw,appState.plan.title);
         con.innerHTML=treatHtml;
         saveStepHistory('treatment',treatHtml);
         document.getElementById('script-btn').style.display='flex';
@@ -1901,6 +1949,9 @@ async function generateTreatment(){
   }
 }
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// SECTION: STEP 04 — 대본
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // ── STEP 04 — 자가평가 루프 + 트리트먼트 연결성 검증 ──
 function evalScript(raw, treatment){
   var results={};var score=0;
@@ -1933,11 +1984,16 @@ function evalScript(raw, treatment){
   results.seqMatch={label:'SEQ 구조 일치',passed:seqInScript>=seqCount*0.8};
   if(results.seqMatch.passed)score++;
 
-  return{results:results,score:score,total:5,pass:score>=4};
+  // 6. 시청 지속성 — 중간 훅/전환 장치가 있는가
+  var retentionHooks=(raw.match(/^자막:|^VO:|^연출:/gm)||[]).length;
+  var hasRetention=retentionHooks>=Math.max(3,sScenes);
+  results.retention={label:'시청 지속성',passed:hasRetention};if(hasRetention)score++;
+
+  return{results:results,score:score,total:6,pass:score>=4};
 }
 
 async function generateScript(){
-  if(!currentTreatment){alert('트리트먼트를 먼저 생성해주세요.');return;}
+  if(!appState.treatment){alert('트리트먼트를 먼저 생성해주세요.');return;}
   if(checkExistingContent('script-container')){
     if(!confirm('새 대본을 생성하면 현재 내용이 히스토리로 저장됩니다.\n계속할까요?')) return;
   }
@@ -1948,7 +2004,7 @@ async function generateScript(){
   document.getElementById('aiprompt-btn').style.display='none';
   sec.scrollIntoView({behavior:'smooth',block:'start'});
 
-  var fmt=currentTreatment.format||'';
+  var fmt=appState.treatment.format||'';
   var genre=getChips('chips-genre');
   var hasChr=isCharacterGenre(genre);
   var voRule=fmt.indexOf('숏폼')>-1?'VO는 1~3문장. 짧고 임팩트 있게.':'VO는 3~6문장. 완성된 문장으로.';
@@ -1960,9 +2016,9 @@ async function generateScript(){
   var basePrompt=[
     getPersona()+' 영상 1편의 대본을 작성해줘.',
     getChannelContext(),
-    '콘텐츠명: '+currentTreatment.title,'포맷: '+fmt,'장르: '+genre.join(', '),'',
+    '콘텐츠명: '+appState.treatment.title,'포맷: '+fmt,'장르: '+genre.join(', '),'',
     chrRule,'',
-    '=== 트리트먼트 ===',currentTreatment.raw,'=================','',
+    '=== 트리트먼트 ===',appState.treatment.raw,'=================','',
     '규칙:',
     '1. 트리트먼트의 모든 시퀀스와 씬을 빠짐없이 작성. 추가/삭제 금지.',
     '2. 모든 씬에 반드시 연출: 표기.',
@@ -1987,10 +2043,10 @@ async function generateScript(){
       var raw=await callAPI(prompt,6000);clearInterval(timer);
       con.innerHTML='<div class="eval-bar checking"><div class="eval-dot" style="background:var(--blue)"></div><span>⟳ 자가평가 중 (트리트먼트 연결성 검증)...</span></div>';
       await new Promise(function(r){setTimeout(r,400);});
-      var ev=evalScript(raw,currentTreatment);
+      var ev=evalScript(raw,appState.treatment);
       if(!bestRaw||ev.score>(bestEval?bestEval.score:0)){bestRaw=raw;bestEval=ev;}
       if(ev.pass||attempt>=MAX_RETRY){
-        var scriptHtml=renderEvalBar(bestEval,attempt)+renderScript(bestRaw,currentTreatment.title);
+        var scriptHtml=renderEvalBar(bestEval,attempt)+renderScript(bestRaw,appState.treatment.title);
         con.innerHTML=scriptHtml;
         saveStepHistory('script',scriptHtml);
         document.getElementById('aiprompt-btn').style.display='flex';
@@ -2009,9 +2065,12 @@ async function generateScript(){
   }
 }
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// SECTION: STEP 05 — 콘티 / 씬 프롬프트
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // ── STEP 05 ──
 async function generateAIPrompts(){
-  if(!currentTreatment){alert('트리트먼트를 먼저 생성해주세요.');return;}
+  if(!appState.treatment){alert('트리트먼트를 먼저 생성해주세요.');return;}
   if(checkExistingContent('aiprompt-container')){
     if(!confirm('새 콘티 / 씬 프롬프트를 생성하면 현재 내용이 히스토리로 저장됩니다.\n계속할까요?')) return;
   }
@@ -2026,9 +2085,9 @@ async function generateAIPrompts(){
 
   var prompt=[
     'Kling, Hailuo, Midjourney, DALL-E 호환 콘티 / 씬 프롬프트를 작성해줘.',
-    '콘텐츠명: '+currentTreatment.title,
+    '콘텐츠명: '+appState.treatment.title,
     getChannelContext(),
-    '=== 트리트먼트 ===',currentTreatment.raw,'=================','',
+    '=== 트리트먼트 ===',appState.treatment.raw,'=================','',
     '규칙:',
     '1. 트리트먼트 씬만 작성. 새 씬 추가 금지.',
     '2. 씬마다 Positive와 Negative Prompt 모두 작성.',
@@ -2046,7 +2105,7 @@ async function generateAIPrompts(){
   try{
     var raw=await callAPI(prompt,5000);
     clearInterval(timer);
-    var aipHtml=renderAIPrompts(raw,currentTreatment.title);
+    var aipHtml=renderAIPrompts(raw,appState.treatment.title);
     con.innerHTML=aipHtml;
     saveStepHistory('aiprompt',aipHtml);
     document.getElementById('thumbnail-btn').style.display='flex';
@@ -2057,27 +2116,27 @@ async function generateAIPrompts(){
   }
 }
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// SECTION: STEP 06 — 썸네일
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // ── STEP 06 ──
 // ── STEP 06 — 썸네일 (확인 다이얼로그 + 히스토리) ──
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// SECTION: 공통 히스토리
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // ── 공통 히스토리 유틸 ──
-var stepHistories={
-  plan:{data:[],idx:-1,barId:'plan-history-bar',conId:'plan-container'},
-  treatment:{data:[],idx:-1,barId:'treatment-history-bar',conId:'treatment-container'},
-  script:{data:[],idx:-1,barId:'script-history-bar',conId:'script-container'},
-  aiprompt:{data:[],idx:-1,barId:'aiprompt-history-bar',conId:'aiprompt-container'},
-  thumbnail:{data:[],idx:-1,barId:'thumbnail-history-bar',conId:'thumbnail-container'}
-};
+
 
 function resetAllHistories(){
-  Object.keys(stepHistories).forEach(function(k){
-    stepHistories[k].data=[];stepHistories[k].idx=-1;
-    var bar=document.getElementById(stepHistories[k].barId);
+  Object.keys(appState.stepHistories).forEach(function(k){
+    appState.stepHistories[k].data=[];appState.stepHistories[k].idx=-1;
+    var bar=document.getElementById(appState.stepHistories[k].barId);
     if(bar)bar.style.display='none';
   });
 }
 
 function saveStepHistory(key,html){
-  var h=stepHistories[key];
+  var h=appState.stepHistories[key];
   var d=new Date();
   var ts=(d.getHours()+'').padStart(2,'0')+':'+(d.getMinutes()+'').padStart(2,'0');
   h.data.push({html:html,time:ts});
@@ -2087,7 +2146,7 @@ function saveStepHistory(key,html){
 }
 
 function renderStepHistoryBar(key){
-  var h=stepHistories[key];
+  var h=appState.stepHistories[key];
   var bar=document.getElementById(h.barId);
   if(!bar)return;
   if(h.data.length<=1){bar.style.display='none';return;}
@@ -2103,7 +2162,7 @@ function renderStepHistoryBar(key){
 }
 
 function restoreStepHistory(key,idx){
-  var h=stepHistories[key];
+  var h=appState.stepHistories[key];
   if(!h.data[idx])return;
   h.idx=idx;
   document.getElementById(h.conId).innerHTML=h.data[idx].html;
@@ -2116,7 +2175,7 @@ function checkExistingContent(conId){
 }
 
 async function generateThumbnail(){
-  if(!currentPlan){alert('기획서를 먼저 생성해주세요.');return;}
+  if(!appState.plan){alert('기획서를 먼저 생성해주세요.');return;}
   if(checkExistingContent('thumbnail-container')){
     if(!confirm('새 썸네일 기획서를 생성하면 현재 내용이 히스토리로 저장됩니다.\n계속할까요?')) return;
   }
@@ -2129,7 +2188,7 @@ async function generateThumbnail(){
 
   var prompt=[
     '유튜브 썸네일 기획서를 3가지 안으로 작성해줘.',
-    '콘텐츠명: '+currentPlan.title,'타겟: '+currentPlan.target,'핵심 훅: '+currentPlan.hook,
+    '콘텐츠명: '+appState.plan.title,'타겟: '+appState.plan.target,'핵심 훅: '+appState.plan.hook,
     getChannelContext(),
     '규칙: 마크다운 없이 아래 형식만 사용.','',
     '[안 1] 컨셉 이름',
@@ -2145,7 +2204,7 @@ async function generateThumbnail(){
   try{
     var raw=await callAPI(prompt,3000);
     clearInterval(timer);
-    var thumbHtml=renderThumbnail(raw,currentPlan.title);
+    var thumbHtml=renderThumbnail(raw,appState.plan.title);
     con.innerHTML=thumbHtml;
     saveStepHistory('thumbnail',thumbHtml);
     setStep(6);
@@ -2155,6 +2214,9 @@ async function generateThumbnail(){
   }
 }
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// SECTION: 내보내기
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // ── EXPORT ──
 function toggleExportMenu(){
   var m=document.getElementById('export-menu');
@@ -2173,7 +2235,7 @@ function toggleExportMenu(){
 function buildExportHTML(){
   var d=new Date();
   var ds=d.getFullYear()+'.'+(d.getMonth()+1)+'.'+d.getDate();
-  var title=currentPlan&&currentPlan.title?currentPlan.title:'YPLAN 기획서';
+  var title=appState.plan&&appState.plan.title?appState.plan.title:'YPLAN 기획서';
   var sections=[
     {id:'plan-container',label:'STEP 02 — 기획서',color:'#2dce6e'},
     {id:'treatment-container',label:'STEP 03 — 트리트먼트',color:'#3b82f6'},
@@ -2275,7 +2337,7 @@ function exportHTML(){
   document.getElementById('export-menu').style.display='none';
   var html=buildExportHTML();if(!html)return;
   var d=new Date(),ds=d.getFullYear()+'.'+(d.getMonth()+1)+'.'+d.getDate();
-  var title=currentPlan&&currentPlan.title?currentPlan.title:'yplan';
+  var title=appState.plan&&appState.plan.title?appState.plan.title:'yplan';
   var fname=title.replace(/[^\uAC00-\uD7A3\u0041-\u007A\u0030-\u0039]/g,'_')+'_'+ds+'.html';
   var blob=new Blob([html],{type:'text/html;charset=utf-8'});
   var url=URL.createObjectURL(blob);
@@ -2297,6 +2359,9 @@ function exportPDF(){
 
 function exportAll(){ exportHTML(); } // 하위 호환
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// SECTION: 유틸
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // ── UTILS ──
 // ── STEP INDICATOR ──
 function setStep(active){
@@ -2312,7 +2377,7 @@ function setStep(active){
   // 해당 단계로 스크롤
   var el=document.getElementById('si-'+active);
   if(el)el.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'});
-  if(currentPlan)currentPlan._step=active;
+  if(appState.plan)appState.plan._step=active;
 }
 
 function pRow(k,v,list){
