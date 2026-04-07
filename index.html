@@ -115,6 +115,15 @@ textarea{resize:vertical;min-height:70px;line-height:1.6}
 .prompt-neg{background:#0f0505;border:1px solid #3a1a1a;border-radius:6px;padding:8px 14px}
 .prompt-neg-label{font-size:10px;color:#fca5a5;font-family:'JetBrains Mono',monospace;letter-spacing:1px;margin-bottom:4px}
 .prompt-neg-text{font-size:11px;color:#fca5a5;font-family:'JetBrains Mono',monospace;line-height:1.7}
+/* ── 스토리보드 시트 ── */
+.sb-scene{background:#0a1a2a;border-left:3px solid #3b82f6;border-radius:6px;padding:8px 14px;margin-bottom:8px}
+.sb-scene-label{font-size:12px;font-weight:700;color:#93c5fd;font-family:'JetBrains Mono',monospace}
+.sb-cut{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:8px}
+.sb-cut-num{font-family:'Bebas Neue',sans-serif;font-size:11px;color:#a78bfa;letter-spacing:2px;margin-bottom:8px}
+.sb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px;margin-bottom:4px}
+.sb-cell{background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:6px 10px}
+.sb-field{display:block;font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace;letter-spacing:.5px;margin-bottom:2px}
+.sb-val{display:block;font-size:12px;color:var(--text);line-height:1.4}
 .thumb-doc{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden}
 .thumb-header{background:#1a0d0a;border-bottom:1px solid var(--border);padding:14px 18px}
 .thumb-card{border-bottom:1px solid var(--border);padding:18px}
@@ -380,7 +389,7 @@ textarea{resize:vertical;min-height:70px;line-height:1.6}
 </div>
 <div id="token-warning" style="display:none;background:#1a1200;border-bottom:1px solid #3a2a00;padding:8px 24px;display:flex;align-items:center;gap:10px">
   <span style="font-size:11px;color:#fbbf24;font-family:JetBrains Mono,monospace;letter-spacing:0.5px">⚠ 토큰 안내</span>
-  <span style="font-size:11px;color:#92400e;line-height:1.6">버튼을 누를 때마다 API 토큰이 소비됩니다 — 아이디어 ~2K / 기획서 ~1.5K / 트리트먼트 ~4K / 대본 ~6K / AI프롬프트 ~5K / 썸네일 ~3K &nbsp;·&nbsp; 전체 파이프라인 약 <b style="color:#fbbf24">$0.07~0.10</b> 수준</span>
+  <span style="font-size:11px;color:#92400e;line-height:1.6">버튼을 누를 때마다 API 토큰이 소비됩니다 — 아이디어 ~2K / 기획서 ~1.5K / 트리트먼트 ~4K / 대본 ~6K / 스토리보드 ~6K / 썸네일 ~3K &nbsp;·&nbsp; 전체 파이프라인 약 <b style="color:#fbbf24">$0.07~0.10</b> 수준</span>
 </div>
 
 <!-- ── 앱 모드 탭 ── -->
@@ -404,7 +413,7 @@ textarea{resize:vertical;min-height:70px;line-height:1.6}
   <span class="si-arrow">›</span>
   <div class="si-item"><div class="si-dot" id="si-4">4</div><span class="si-label" id="sl-4">대본</span></div>
   <span class="si-arrow">›</span>
-  <div class="si-item"><div class="si-dot" id="si-5">5</div><span class="si-label" id="sl-5">콘티/씬</span></div>
+  <div class="si-item"><div class="si-dot" id="si-5">5</div><span class="si-label" id="sl-5">스토리보드</span></div>
   <span class="si-arrow">›</span>
   <div class="si-item"><div class="si-dot" id="si-6">6</div><span class="si-label" id="sl-6">썸네일</span></div>
 </div>
@@ -577,20 +586,20 @@ textarea{resize:vertical;min-height:70px;line-height:1.6}
         </div>
         <div id="script-history-bar" class="thumb-history-bar" style="display:none"></div>
         <div id="script-container"></div>
-        <button class="next-step-btn" id="aiprompt-btn" onclick="generateAIPrompts()" style="display:none;border-color:#1a3a1a">
+        <button class="next-step-btn" id="storyboard-btn" onclick="generateStoryboard()" style="display:none;border-color:#1a3a1a">
           <span class="next-step-icon" style="background:var(--success);color:#000">STEP 05</span>
-          <div><div class="next-step-text">콘티 / 씬 프롬프트 생성</div><div class="next-step-sub">Kling / Hailuo / Midjourney / DALL-E 호환 프롬프트</div></div>
+          <div><div class="next-step-text">콘티 / 스토리보드 시트 생성</div><div class="next-step-sub">Scene → Cut 분해 · 촬영 설계 · AI 프롬프트</div></div>
         </button>
       </div>
       <!-- STEP 05 -->
-      <div id="aiprompt-section" style="display:none">
+      <div id="storyboard-section" style="display:none">
         <div class="result-header">
           <span class="result-badge" style="background:var(--success);color:#000">STEP 05</span>
-          <span class="result-title">콘티 / 씬 프롬프트</span>
-          <button class="copy-btn" onclick="copyEl('aiprompt-container')">COPY ALL</button>
+          <span class="result-title">콘티 / 스토리보드 시트</span>
+          <button class="copy-btn" onclick="copyEl('storyboard-container')">COPY ALL</button>
         </div>
-        <div id="aiprompt-history-bar" class="thumb-history-bar" style="display:none"></div>
-        <div id="aiprompt-container"></div>
+        <div id="storyboard-history-bar" class="thumb-history-bar" style="display:none"></div>
+        <div id="storyboard-container"></div>
         <button class="next-step-btn" id="thumbnail-btn" onclick="generateThumbnail()" style="display:none;border-color:#3a1a0a">
           <span class="next-step-icon" style="background:#fb923c;color:#000">STEP 06</span>
           <div><div class="next-step-text">썸네일 기획서 생성</div><div class="next-step-sub">레이아웃 · 카피 · 색감 방향 3안</div></div>
@@ -693,13 +702,21 @@ CHARACTER [이름]: 인물 대사
 자막: 핵심텍스트1, 텍스트2, 텍스트3</div>
     </div>
     <div class="tmpl-card">
-      <div class="tmpl-header"><span class="tmpl-title">05 — 콘티 / 씬 프롬프트</span><button class="copy-btn" onclick="copyTmpl('t5')">COPY</button></div>
-      <div class="tmpl-body" id="t5">아래 트리트먼트 씬별로 AI 영상 프롬프트를 작성해줘.
-(Kling / Hailuo / Hixfield용)
+      <div class="tmpl-header"><span class="tmpl-title">05 — 콘티 / 스토리보드 시트</span><button class="copy-btn" onclick="copyTmpl('t5')">COPY</button></div>
+      <div class="tmpl-body" id="t5">아래 트리트먼트를 기반으로 컷 단위 스토리보드 시트를 작성해줘.
 
-씬 형식:
-POS: 시각스타일, 카메라워크, 조명, 피사체 (영어 40~60 words)
-NEG: 피해야할 요소 (영어 20~30 words)</div>
+형식:
+[SEQ1] 시퀀스명
+S1 | 씬 내용 요약
+C1 | 컷목적: / 구도: / 카메라무브: / 피사체행동: / 배경: / 감정: / 예상길이: / 대사VO: / 자막: / 전환:
+IMG: (Midjourney/DALL-E용 이미지 프롬프트 영어)
+VID: (Kling/Hailuo용 비디오 프롬프트 영어)
+NEG: (네거티브 프롬프트 영어)
+
+규칙:
+- 각 Scene을 2~4개 Cut으로 분해
+- IMG/VID/NEG는 AI 영상/이미지 제작 시에만 작성
+- 마크다운 없이 위 형식만 사용</div>
     </div>
     <div class="tmpl-card">
       <div class="tmpl-header"><span class="tmpl-title">06 — 썸네일 기획서</span><button class="copy-btn" onclick="copyTmpl('t6')">COPY</button></div>
@@ -754,7 +771,7 @@ const appState = {
     plan:      {data:[],idx:-1,barId:'plan-history-bar',conId:'plan-container'},
     treatment: {data:[],idx:-1,barId:'treatment-history-bar',conId:'treatment-container'},
     script:    {data:[],idx:-1,barId:'script-history-bar',conId:'script-container'},
-    aiprompt:  {data:[],idx:-1,barId:'aiprompt-history-bar',conId:'aiprompt-container'},
+    storyboard:{data:[],idx:-1,barId:'storyboard-history-bar',conId:'storyboard-container'},
     thumbnail: {data:[],idx:-1,barId:'thumbnail-history-bar',conId:'thumbnail-container'}
   }
 };
@@ -1087,7 +1104,7 @@ function startTimer(elId,prefix){
   return setInterval(function(){s++;var el=document.getElementById(elId);if(el)el.textContent=prefix+' '+s+'s';},1000);
 }
 function hideAll(){
-  ['plan-section','treatment-section','script-section','aiprompt-section','thumbnail-section'].forEach(function(id){document.getElementById(id).style.display='none';});
+  ['plan-section','treatment-section','script-section','storyboard-section','thumbnail-section'].forEach(function(id){document.getElementById(id).style.display='none';});
 }
 function getFormatRule(fmt){
   var f=fmt.join(',');
@@ -1260,28 +1277,81 @@ function renderScript(raw, title){
   return h+'</div>';
 }
 
-function renderAIPrompts(raw, title){
-  var lines=raw.split(NL).map(function(l){return l.trim();}).filter(function(l){return l.length>0;});
-  var h='<div class="prompt-doc"><div class="prompt-header"><div style="font-size:15px;font-weight:700;color:#4ade80">'+title+'</div><div style="font-size:12px;color:#86efac;margin-top:2px">콘티 / 씬 프롬프트 — Kling / Hailuo / Midjourney / DALL-E</div></div>';
-  var epOpen=false,pos='',neg='',sceneLabel='',sceneOpen=false;
-  function flush(){
-    if(!sceneOpen)return;
-    var id='p'+Date.now().toString(36);
-    var s='<div class="prompt-scene"><div class="prompt-scene-num">'+sceneLabel+'</div>';
-    if(pos)s+='<div class="prompt-box"><div class="prompt-label">POSITIVE PROMPT</div><div class="prompt-text" id="'+id+'">'+pos+'</div><button class="prompt-copy-btn" onclick="copyPrompt(\''+id+'\',this)">COPY</button></div>';
-    if(neg)s+='<div class="prompt-neg"><div class="prompt-neg-label">NEGATIVE PROMPT</div><div class="prompt-neg-text">'+neg+'</div></div>';
+function renderStoryboard(raw, title){
+  var lines=raw.split(NL).map(function(l){return l.trimRight();}).filter(function(l){return l.length>0;});
+  var h='<div class="prompt-doc"><div class="prompt-header"><div style="font-size:15px;font-weight:700;color:#4ade80">'+title+'</div><div style="font-size:12px;color:#86efac;margin-top:2px">콘티 / 스토리보드 시트 — Scene → Cut 분해 · 촬영 설계 · AI 프롬프트</div></div>';
+
+  var seqOpen=false;
+  var sceneLabel='';
+  // cut accumulator
+  var cutLabel='', cutFields={}, cutImg='', cutVid='', cutNeg='', cutOpen=false;
+
+  function flushCut(){
+    if(!cutOpen)return;
+    var id='c'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+    var fieldOrder=['컷목적','구도','카메라무브','피사체행동','배경','감정','예상길이','대사VO','자막','전환'];
+    var gridCells=fieldOrder.map(function(k){
+      return '<div class="sb-cell"><span class="sb-field">'+k+'</span><span class="sb-val">'+(cutFields[k]||'—')+'</span></div>';
+    }).join('');
+    var s='<div class="sb-cut"><div class="sb-cut-num">'+cutLabel+'</div>';
+    s+='<div class="sb-grid">'+gridCells+'</div>';
+    if(cutImg){var iid=id+'i';s+='<div class="prompt-box" style="margin-top:6px"><div class="prompt-label">IMG PROMPT</div><div class="prompt-text" id="'+iid+'">'+cutImg+'</div><button class="prompt-copy-btn" onclick="copyPrompt(\''+iid+'\',this)">COPY</button></div>';}
+    if(cutVid){var vid=id+'v';s+='<div class="prompt-box" style="margin-top:4px"><div class="prompt-label">VID PROMPT</div><div class="prompt-text" id="'+vid+'">'+cutVid+'</div><button class="prompt-copy-btn" onclick="copyPrompt(\''+vid+'\',this)">COPY</button></div>';}
+    if(cutNeg){s+='<div class="prompt-neg" style="margin-top:4px"><div class="prompt-neg-label">NEG PROMPT</div><div class="prompt-neg-text">'+cutNeg+'</div></div>';}
     h+=s+'</div>';
-    pos='';neg='';sceneLabel='';sceneOpen=false;
+    cutLabel='';cutFields={};cutImg='';cutVid='';cutNeg='';cutOpen=false;
   }
+
+  function parseCutFields(str){
+    // "C1 | 컷목적: XX / 구도: YY / ..." 형태 파싱
+    var parts=str.split('/');
+    var result={};
+    parts.forEach(function(part){
+      var colon=part.indexOf(':');
+      if(colon>-1){
+        var k=part.slice(0,colon).trim().replace(/^C\d+\s*\|\s*/,'');
+        var v=part.slice(colon+1).trim();
+        if(k)result[k]=v;
+      }
+    });
+    return result;
+  }
+
   lines.forEach(function(line){
-    if(isSeqLine(line)){flush();if(epOpen)h+='</div>';h+='<div class="prompt-ep"><div class="prompt-ep-num">'+line+'</div>';epOpen=true;}
-    else if(isSceneLine(line)){flush();var p=line.split('|').map(function(x){return x.trim();});sceneLabel=(p[0]||'')+(p[1]?' | '+p[1]:'');sceneOpen=true;}
-    else if(line.indexOf('POS:')===0){pos=line.slice(4).trim();}
-    else if(line.indexOf('NEG:')===0){neg=line.slice(4).trim();}
-    else if(sceneOpen&&pos&&!neg){pos+=' '+line;}
+    var trimmed=line.trim();
+    if(isSeqLine(trimmed)){
+      flushCut();
+      if(seqOpen)h+='</div>';
+      h+='<div class="prompt-ep"><div class="prompt-ep-num">'+trimmed+'</div>';
+      seqOpen=true; sceneLabel='';
+    } else if(isSceneLine(trimmed)){
+      flushCut();
+      var p=trimmed.split('|').map(function(x){return x.trim();});
+      sceneLabel=(p[0]||'')+(p[1]?' — '+p[1]:'');
+      h+='<div class="sb-scene"><div class="sb-scene-label">'+sceneLabel+'</div></div>';
+    } else if(/^C\d+\s*\|/.test(trimmed)){
+      flushCut();
+      cutOpen=true;
+      var pipeIdx=trimmed.indexOf('|');
+      cutLabel=trimmed.slice(0,pipeIdx).trim();
+      var rest=trimmed.slice(pipeIdx+1).trim();
+      cutFields=parseCutFields(cutLabel+' | '+rest);
+    } else if(trimmed.indexOf('IMG:')===0){
+      cutImg=trimmed.slice(4).trim();
+    } else if(trimmed.indexOf('VID:')===0){
+      cutVid=trimmed.slice(4).trim();
+    } else if(trimmed.indexOf('NEG:')===0){
+      cutNeg=trimmed.slice(4).trim();
+    } else if(cutOpen&&trimmed.indexOf(':')>-1&&!trimmed.match(/^(IMG|VID|NEG):/)){
+      // continuation field line like "카메라무브: 핸드헬드"
+      var colon=trimmed.indexOf(':');
+      var k=trimmed.slice(0,colon).trim();
+      var v=trimmed.slice(colon+1).trim();
+      if(k&&v)cutFields[k]=v;
+    }
   });
-  flush();
-  if(epOpen)h+='</div>';
+  flushCut();
+  if(seqOpen)h+='</div>';
   return h+'</div>';
 }
 
@@ -1888,7 +1958,7 @@ async function generateTreatment(){
   var con=document.getElementById('treatment-container');
   sec.style.display='block';
   document.getElementById('script-btn').style.display='none';
-  ['script-section','aiprompt-section','thumbnail-section'].forEach(function(id){document.getElementById(id).style.display='none';});
+  ['script-section','storyboard-section','thumbnail-section'].forEach(function(id){document.getElementById(id).style.display='none';});
   sec.scrollIntoView({behavior:'smooth',block:'start'});
 
   var seqs=(appState.plan.sequences||appState.plan.episodes||[]).map(function(e,i){return 'SEQ'+(i+1)+': '+e;}).join(NL);
@@ -2000,8 +2070,8 @@ async function generateScript(){
   var sec=document.getElementById('script-section');
   var con=document.getElementById('script-container');
   sec.style.display='block';
-  ['aiprompt-section','thumbnail-section'].forEach(function(id){document.getElementById(id).style.display='none';});
-  document.getElementById('aiprompt-btn').style.display='none';
+  ['storyboard-section','thumbnail-section'].forEach(function(id){document.getElementById(id).style.display='none';});
+  document.getElementById('storyboard-btn').style.display='none';
   sec.scrollIntoView({behavior:'smooth',block:'start'});
 
   var fmt=appState.treatment.format||'';
@@ -2049,7 +2119,7 @@ async function generateScript(){
         var scriptHtml=renderEvalBar(bestEval,attempt)+renderScript(bestRaw,appState.treatment.title);
         con.innerHTML=scriptHtml;
         saveStepHistory('script',scriptHtml);
-        document.getElementById('aiprompt-btn').style.display='flex';
+        document.getElementById('storyboard-btn').style.display='flex';
         setStep(4);break;
       } else {
         var failItems=Object.keys(ev.results).filter(function(k){return !ev.results[k].passed;}).map(function(k){return ev.results[k].label;});
@@ -2066,53 +2136,99 @@ async function generateScript(){
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// SECTION: STEP 05 — 콘티 / 씬 프롬프트
+// SECTION: STEP 05 — 콘티 / 스토리보드 시트
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // ── STEP 05 ──
-async function generateAIPrompts(){
+function evalStoryboard(raw, treatment){
+  var results={};var score=0;
+  var tRaw=treatment.raw||'';
+
+  // 1. Cut 분해 여부 — C1, C2 등 컷 표기가 3개 이상
+  var cutCount=(raw.match(/^C\d+\s*\|/gm)||[]).length;
+  results.cutBreak={label:'Cut 분해',passed:cutCount>=3};if(cutCount>=3)score++;
+
+  // 2. 필수 필드 충족 — 구도/카메라무브/예상길이가 최소 3회 이상
+  var fieldCount=(raw.match(/구도:|카메라무브:|예상길이:/g)||[]).length;
+  results.fields={label:'필수 필드',passed:fieldCount>=3};if(fieldCount>=3)score++;
+
+  // 3. 씬 누락 없음 — 트리트먼트 씬(S1~Sn) 수의 80% 이상 커버
+  var tSceneCount=(tRaw.match(/^S\d+\s*\|/gm)||[]).length||1;
+  var sbSceneCount=(raw.match(/^S\d+\s*\|/gm)||[]).length;
+  var sceneCover=sbSceneCount>=tSceneCount*0.8;
+  results.sceneCover={label:'씬 커버리지',passed:sceneCover};if(sceneCover)score++;
+
+  // 4. 감정/분위기 표기 — 감정 필드가 최소 3회 이상
+  var emotionCount=(raw.match(/감정:/g)||[]).length;
+  results.emotion={label:'감정 표기',passed:emotionCount>=3};if(emotionCount>=3)score++;
+
+  return{results:results,score:score,total:4,pass:score>=3};
+}
+
+async function generateStoryboard(){
   if(!appState.treatment){alert('트리트먼트를 먼저 생성해주세요.');return;}
-  if(checkExistingContent('aiprompt-container')){
-    if(!confirm('새 콘티 / 씬 프롬프트를 생성하면 현재 내용이 히스토리로 저장됩니다.\n계속할까요?')) return;
+  if(checkExistingContent('storyboard-container')){
+    if(!confirm('새 콘티 / 스토리보드 시트를 생성하면 현재 내용이 히스토리로 저장됩니다.\n계속할까요?')) return;
   }
-  var sec=document.getElementById('aiprompt-section');
-  var con=document.getElementById('aiprompt-container');
+  var sec=document.getElementById('storyboard-section');
+  var con=document.getElementById('storyboard-container');
   sec.style.display='block';
   document.getElementById('thumbnail-btn').style.display='none';
   document.getElementById('thumbnail-section').style.display='none';
-  con.innerHTML='<div class="loading-state"><div class="loader"></div><div class="loading-text" id="t5">콘티 / 씬 프롬프트 생성 중... 0s</div></div>';
-  var timer=startTimer('t5','콘티 / 씬 프롬프트 생성 중...');
   sec.scrollIntoView({behavior:'smooth',block:'start'});
 
-  var prompt=[
-    'Kling, Hailuo, Midjourney, DALL-E 호환 콘티 / 씬 프롬프트를 작성해줘.',
+  var wsOn=appState.wsEnabled;
+  var MAX_RETRY=3;var attempt=0;var bestRaw=null;var bestEval=null;
+
+  var basePrompt=[
+    '너는 영상 제작 전문 콘티 작가야.',
+    '아래 트리트먼트를 기반으로 컷 단위 스토리보드 시트를 작성해줘.',
     '콘텐츠명: '+appState.treatment.title,
     getChannelContext(),
     '=== 트리트먼트 ===',appState.treatment.raw,'=================','',
     '규칙:',
-    '1. 트리트먼트 씬만 작성. 새 씬 추가 금지.',
-    '2. 씬마다 Positive와 Negative Prompt 모두 작성.',
-    '3. Positive: 스타일, 카메라, 조명, 피사체, 분위기 영어 (40~60 words)',
-    '4. Negative: 피해야 할 요소 영어 (20~30 words)',
-    '5. 마크다운 없이 아래 형식만 사용.','',
-    '[SEQ1] 시퀀스 이름',
+    '1. 각 Scene을 2~4개 Cut으로 분해해줘.',
+    '2. 컷마다 아래 항목을 작성해줘.',
+    '3. AI 프롬프트 항목(IMG/VID/NEG)은 '+(wsOn?'웹서치가 ON이므로 영어로 반드시 작성해줘.':'생략해도 돼.'),
+    '4. 마크다운 없이 아래 형식만 사용.','',
+    '[SEQ1] 시퀀스명',
     'S1 | 씬 내용 요약',
-    'POS: cinematic, detailed english prompt...',
-    'NEG: blurry, low quality, ...','',
-    'S2 | 씬 내용 요약','POS: ...','NEG: ...','',
-    '[SEQ2] (동일 형식)','...(전체 시퀀스 작성)'
-  ].join(NL);
+    'C1 | 컷목적: / 구도: / 카메라무브: / 피사체행동: / 배경: / 감정: / 예상길이: / 대사VO: / 자막: / 전환:',
+    'IMG: (Midjourney/DALL-E용 이미지 프롬프트 영어, 생략가능)',
+    'VID: (Kling/Hailuo용 비디오 프롬프트 영어, 생략가능)',
+    'NEG: (네거티브 프롬프트 영어, 생략가능)','',
+    'C2 | (동일 형식)',
+    'S2 | ...','[SEQ2] (동일 형식)'
+  ].filter(Boolean).join(NL);
+  var prompt=basePrompt;
 
-  try{
-    var raw=await callAPI(prompt,5000);
-    clearInterval(timer);
-    var aipHtml=renderAIPrompts(raw,appState.treatment.title);
-    con.innerHTML=aipHtml;
-    saveStepHistory('aiprompt',aipHtml);
-    document.getElementById('thumbnail-btn').style.display='flex';
-    setStep(5);
-  }catch(e){
-    clearInterval(timer);
-    con.innerHTML='<div class="error-box">프롬프트 오류: '+e.message+'<br><br><button class="retry-btn" onclick="generateAIPrompts()">다시 시도</button></div>';
+  while(attempt<MAX_RETRY){
+    attempt++;
+    con.innerHTML='<div class="loading-state"><div class="loader"></div><div class="loading-text" id="t5">'+(attempt>1?'['+attempt+'차 재생성] ':'')+'스토리보드 생성 중... 0s</div></div>';
+    var timer=startTimer('t5',(attempt>1?'['+attempt+'차 재생성] ':'')+'스토리보드 생성 중...');
+    try{
+      var raw=await callAPI(prompt,6000,wsOn);
+      clearInterval(timer);
+      con.innerHTML='<div class="eval-bar checking"><div class="eval-dot" style="background:var(--blue)"></div><span>⟳ 자가평가 중 (컷 구조 검증)...</span></div>';
+      await new Promise(function(r){setTimeout(r,400);});
+      var ev=evalStoryboard(raw,appState.treatment);
+      if(!bestRaw||ev.score>(bestEval?bestEval.score:0)){bestRaw=raw;bestEval=ev;}
+      if(ev.pass||attempt>=MAX_RETRY){
+        var sbHtml=renderEvalBar(bestEval,attempt)+renderStoryboard(bestRaw,appState.treatment.title);
+        con.innerHTML=sbHtml;
+        saveStepHistory('storyboard',sbHtml);
+        document.getElementById('thumbnail-btn').style.display='flex';
+        setStep(5);break;
+      } else {
+        var failItems=Object.keys(ev.results).filter(function(k){return !ev.results[k].passed;}).map(function(k){return ev.results[k].label;});
+        con.innerHTML=renderEvalBar(ev,attempt);
+        prompt=basePrompt+NL+NL+'[재시도 지시] 이전 결과에서 미달 항목: '+failItems.join(', ')+'. 이 항목을 반드시 보완해줘.';
+        await new Promise(function(r){setTimeout(r,300);});
+      }
+    }catch(e){
+      clearInterval(timer);
+      con.innerHTML='<div class="error-box">스토리보드 오류: '+e.message+'<br><br><button class="retry-btn" onclick="generateStoryboard()">다시 시도</button></div>';
+      break;
+    }
   }
 }
 
@@ -2240,7 +2356,7 @@ function buildExportHTML(){
     {id:'plan-container',label:'STEP 02 — 기획서',color:'#2dce6e'},
     {id:'treatment-container',label:'STEP 03 — 트리트먼트',color:'#3b82f6'},
     {id:'script-container',label:'STEP 04 — 대본 / 스크립트',color:'#a855f7'},
-    {id:'aiprompt-container',label:'STEP 05 — 콘티 / 씬 프롬프트',color:'#2dce6e'},
+    {id:'storyboard-container',label:'STEP 05 — 콘티 / 스토리보드 시트',color:'#2dce6e'},
     {id:'thumbnail-container',label:'STEP 06 — 썸네일 기획서',color:'#fb923c'}
   ];
   var hasContent=sections.some(function(s){var el=document.getElementById(s.id);return el&&el.innerText.trim();});
@@ -2309,6 +2425,14 @@ function buildExportHTML(){
     +'.prompt-neg-label{color:#dc2626!important}'
     +'.prompt-neg-text{color:#dc2626!important}'
     +'.prompt-copy-btn{display:none!important}'
+    /* 스토리보드 */
+    +'.sb-scene{background:#eff6ff!important;border-left-color:#3b82f6!important}'
+    +'.sb-scene-label{color:#1d4ed8!important}'
+    +'.sb-cut{background:#fafafa!important;border-color:#e5e7eb!important}'
+    +'.sb-cut-num{color:#7c3aed!important}'
+    +'.sb-cell{background:#fff!important;border-color:#e5e7eb!important}'
+    +'.sb-field{color:#6b7280!important}'
+    +'.sb-val{color:#111827!important}'
     /* 썸네일 */
     +'.thumb-doc{border:none!important;border-radius:0!important}'
     +'.thumb-header{background:#fff7ed!important;border-bottom:1px solid #fed7aa!important}'
