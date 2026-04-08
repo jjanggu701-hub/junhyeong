@@ -1674,7 +1674,9 @@ function renderIdeas(ideas, evalResults, newsInput, failCount){
     var sourceTag=idea.source
       ?'<div style="margin-top:6px;font-size:10px;color:var(--success);font-family:JetBrains Mono,monospace;background:#0a1a0a;border:1px solid #1a3a1a;padding:3px 8px;border-radius:3px">📰 '+idea.source+'</div>'
       :'';
-    var isSaved=appState.savedIdeas.some(function(s){return s.title===idea.title;});
+    var savedEntry=appState.savedIdeas.find(function(s){return s.title===idea.title;});
+    var isSaved=!!savedEntry;
+    if(isSaved)idea._savedId=savedEntry.id;
     var card=document.createElement('div');
     card.className='idea-card';
     card.innerHTML='<div class="idea-num">IDEA '+(idea.num||String(i+1).padStart(2,'0'))+'</div>'
@@ -1685,7 +1687,7 @@ function renderIdeas(ideas, evalResults, newsInput, failCount){
       +'<span>난이도: <b>'+idea.diff+'</b></span>'
       +'<span style="color:#EF9F27">성장성: <b style="color:#EF9F27">'+idea.growth+'</b></span>'
       +'</div>'
-      +'<button class="idea-star-btn'+(isSaved?' saved':'')+'" title="'+(isSaved?'저장 해제':'즐겨찾기 저장')+'">'+(isSaved?'★':'☆')+'</button>';
+      +'<button class="idea-star-btn'+(isSaved?' saved':'')+'"'+(isSaved?' data-saved-id="'+savedEntry.id+'"':'')+' title="'+(isSaved?'저장 해제':'즐겨찾기 저장')+'">'+(isSaved?'★':'☆')+'</button>';
     card.onclick=function(){
       if(card.classList.contains('selected')){
         if(!confirm(idea.title+' 기획서를 다시 생성할까요?\n현재까지 생성된 내용이 초기화됩니다.')) return;
@@ -1703,15 +1705,20 @@ function saveSavedIdeasToStorage(){
   localStorage.setItem('yplan_saved_ideas',JSON.stringify(appState.savedIdeas));
 }
 function toggleSaveIdea(idea, btn){
-  var idx=appState.savedIdeas.findIndex(function(s){return s.title===idea.title;});
+  var idx=idea._savedId?appState.savedIdeas.findIndex(function(s){return s.id===idea._savedId;}):-1;
   if(idx>-1){
     appState.savedIdeas.splice(idx,1);
+    idea._savedId=null;
     btn.textContent='☆'; btn.classList.remove('saved'); btn.title='즐겨찾기 저장';
+    btn.removeAttribute('data-saved-id');
   } else {
-    var entry={title:idea.title,desc:idea.desc||'',diff:idea.diff||'',growth:idea.growth||'',num:idea.num||'',savedAt:new Date().toISOString()};
+    var newId=Date.now().toString(36)+Math.random().toString(36).slice(2);
+    idea._savedId=newId;
+    var entry={id:newId,title:idea.title,desc:idea.desc||'',diff:idea.diff||'',growth:idea.growth||'',num:idea.num||'',savedAt:new Date().toISOString()};
     appState.savedIdeas.unshift(entry);
     if(appState.savedIdeas.length>20) appState.savedIdeas.pop();
     btn.textContent='★'; btn.classList.add('saved'); btn.title='저장 해제';
+    btn.setAttribute('data-saved-id',newId);
   }
   saveSavedIdeasToStorage();
   // 저장됨 탭 카운트 배지 갱신
@@ -1777,12 +1784,10 @@ function renderSavedTab(){
     card.querySelector('.saved-del-btn').onclick=function(){
       appState.savedIdeas.splice(i,1);
       saveSavedIdeasToStorage();
-      // 아이디어 카드의 ★ 버튼도 갱신
-      document.querySelectorAll('.idea-star-btn').forEach(function(btn){
-        var nameEl=btn.closest('.idea-card');
-        if(nameEl&&nameEl.querySelector('.idea-name')&&nameEl.querySelector('.idea-name').textContent===idea.title){
-          btn.textContent='☆'; btn.classList.remove('saved'); btn.title='즐겨찾기 저장';
-        }
+      // 아이디어 카드의 ★ 버튼도 갱신 (data-saved-id 속성으로 매칭)
+      document.querySelectorAll('.idea-star-btn[data-saved-id="'+idea.id+'"]').forEach(function(btn){
+        btn.textContent='☆'; btn.classList.remove('saved'); btn.title='즐겨찾기 저장';
+        btn.removeAttribute('data-saved-id');
       });
       var tabBtn=document.getElementById('tab-btn-saved');
       if(tabBtn) tabBtn.textContent='★ 저장됨'+(appState.savedIdeas.length>0?' ('+appState.savedIdeas.length+')':'');
@@ -2298,7 +2303,16 @@ function evalStoryboard(raw, treatment){
   var emotionCount=(raw.match(/감정:/g)||[]).length;
   results.emotion={label:'감정 표기',passed:emotionCount>=3};if(emotionCount>=3)score++;
 
-  return{results:results,score:score,total:4,pass:score>=3};
+  // 5. 컷 전환 타당성 — 전환 필드가 최소 3회 이상 등장하는가
+  var transCount=(raw.match(/전환:/g)||[]).length;
+  results.transition={label:'컷 전환 표기',passed:transCount>=3};if(transCount>=3)score++;
+
+  // 6. 컷 흐름 자연스러움 — 컷목적 키워드가 씬 흐름 키워드 중 2개 이상 등장하는가
+  var flowKeywords=['오프닝','도입','전개','절정','마무리','클라이맥스','CTA'];
+  var flowMatched=flowKeywords.filter(function(k){return raw.indexOf(k)>-1;}).length;
+  results.flowVariety={label:'컷 흐름 다양성',passed:flowMatched>=2};if(flowMatched>=2)score++;
+
+  return{results:results,score:score,total:6,pass:score>=5};
 }
 
 async function generateStoryboard(){
