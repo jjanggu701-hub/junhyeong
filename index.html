@@ -437,6 +437,11 @@ textarea{resize:vertical;min-height:70px;line-height:1.6}
   <input type="password" id="openai-key" placeholder="sk-..." oninput="saveOpenAIKey()"/>
   <span class="key-status empty" id="openai-key-status">미입력</span>
 </div>
+<div id="pplan-banner" style="display:none;background:#0a1a2a;border-bottom:1px solid var(--blue);padding:8px 24px;align-items:center;gap:12px">
+  <span style="font-size:12px;color:#93c5fd;font-family:'Noto Sans KR',sans-serif" id="pplan-banner-text">📎 PPLAN 프로젝트 연결됨</span>
+  <button onclick="applyPPLANData(loadFromPPLAN())" style="background:var(--blue);color:white;border:none;border-radius:5px;padding:4px 12px;font-size:11px;font-family:'Noto Sans KR',sans-serif;cursor:pointer">적용하기</button>
+  <button onclick="dismissPPLANBanner()" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:5px;padding:4px 10px;font-size:11px;cursor:pointer">닫기</button>
+</div>
 <div id="token-warning" style="display:none;background:#1a1200;border-bottom:1px solid #3a2a00;padding:8px 24px;display:flex;align-items:center;gap:10px">
   <span style="font-size:11px;color:#fbbf24;font-family:JetBrains Mono,monospace;letter-spacing:0.5px">⚠ 토큰 안내</span>
   <span style="font-size:11px;color:#92400e;line-height:1.6">버튼을 누를 때마다 API 토큰이 소비됩니다 — 아이디어 ~2K / 기획서 ~1.5K / 트리트먼트 ~4K / 대본 ~6K / 스토리보드 ~6K / 썸네일 ~3K &nbsp;·&nbsp; 전체 파이프라인 약 <b style="color:#fbbf24">$0.07~0.10</b> 수준</span>
@@ -3034,6 +3039,40 @@ async function triggerCutImage(areaId, imgPrompt){
   }
 }
 
+// ── PPLAN 연동 ──
+function loadFromPPLAN(){
+  try{
+    var raw=localStorage.getItem('pplan_current_project');
+    if(!raw)return null;
+    return JSON.parse(raw);
+  }catch(e){return null;}
+}
+function applyPPLANData(data){
+  if(data.project){var el=document.getElementById('brief-purpose');if(el)el.value=data.project;appState.meetingBrief.purpose=data.project;}
+  if(data.points){var el=document.getElementById('brief-request');if(el)el.value=data.points;appState.meetingBrief.request=data.points;}
+  if(data.ref){var el=document.getElementById('brief-ref');if(el)el.value=data.ref;appState.meetingBrief.reference=data.ref;}
+  if(data.note){var el=document.getElementById('brief-note');if(el)el.value=data.note;appState.meetingBrief.note=data.note;}
+  if(data.person1){var el=document.getElementById('subject-person1');if(el)el.value=data.person1;appState.subject.person1=data.person1;}
+  if(data.person2){var el=document.getElementById('subject-person2');if(el)el.value=data.person2;appState.subject.person2=data.person2;}
+  if(data.product){var el=document.getElementById('subject-product');if(el)el.value=data.product;appState.subject.product=data.product;}
+  if(data.bg){var el=document.getElementById('subject-bg');if(el)el.value=data.bg;appState.subject.background=data.bg;}
+  var briefBody=document.getElementById('sec-brief');
+  if(briefBody){briefBody.classList.remove('collapsed');var toggle=briefBody.previousElementSibling;if(toggle)toggle.classList.remove('collapsed');}
+  if(data.person1||data.person2||data.product||data.bg){
+    var subBody=document.getElementById('sec-subject');
+    if(subBody){subBody.classList.remove('collapsed');var toggle=subBody.previousElementSibling;if(toggle)toggle.classList.remove('collapsed');}
+  }
+  updateMeetingBrief('purpose',appState.meetingBrief.purpose);
+  updateSubject('person1',appState.subject.person1);
+  var banner=document.getElementById('pplan-banner');
+  if(banner)banner.style.display='none';
+  alert('PPLAN 프로젝트 데이터가 적용됐어요.\n미팅 브리프와 피사체 설정을 확인해주세요.');
+}
+function dismissPPLANBanner(){
+  var banner=document.getElementById('pplan-banner');
+  if(banner)banner.style.display='none';
+}
+
 // ── 초기화 ──
 renderProfileSelect();
 (function initOpenAIKey(){
@@ -3048,6 +3087,15 @@ renderProfileSelect();
 (function initSavedBadge(){
   var tabBtn=document.getElementById('tab-btn-saved');
   if(tabBtn&&appState.savedIdeas.length>0) tabBtn.textContent='★ 저장됨 ('+appState.savedIdeas.length+')';
+})();
+(function initPPLAN(){
+  var data=loadFromPPLAN();
+  if(!data)return;
+  var banner=document.getElementById('pplan-banner');
+  if(!banner)return;
+  var label=(data.project||'프로젝트')+(data.client?' / '+data.client:'');
+  document.getElementById('pplan-banner-text').textContent='📎 PPLAN 프로젝트 연결됨: '+label;
+  banner.style.display='flex';
 })();
 </script>
 </body>
