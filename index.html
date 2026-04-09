@@ -118,6 +118,11 @@ textarea{resize:vertical;min-height:70px;line-height:1.6}
 .prompt-neg{background:#0f0505;border:1px solid #3a1a1a;border-radius:6px;padding:8px 14px}
 .prompt-neg-label{font-size:11px;color:#fca5a5;font-family:'JetBrains Mono',monospace;letter-spacing:1px;margin-bottom:4px}
 .prompt-neg-text{font-size:12px;color:#fca5a5;font-family:'JetBrains Mono',monospace;line-height:1.7}
+.sb-img-area{margin-top:6px}
+.sb-img-gen-btn{background:var(--surface2);border:1px solid var(--border);color:var(--accent);font-size:12px;padding:6px 12px;border-radius:6px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all .2s;width:100%}
+.sb-img-gen-btn:hover{border-color:var(--accent);background:#0a2a0a}
+.sb-img-nokey{font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace}
+.sb-img-loading{display:flex;align-items:center;gap:8px;padding:6px 0}
 /* ── 스토리보드 시트 ── */
 .sb-scene{background:#0a1a2a;border-left:3px solid #3b82f6;border-radius:6px;padding:8px 14px;margin-bottom:8px}
 .sb-scene-label{font-size:12px;font-weight:700;color:#93c5fd;font-family:'JetBrains Mono',monospace}
@@ -312,6 +317,28 @@ textarea{resize:vertical;min-height:70px;line-height:1.6}
 .profile-icon-btn.edit:hover{border-color:#93c5fd;color:#93c5fd}
 .profile-badge{font-size:9px;font-family:'JetBrains Mono',monospace;background:#0a1a2a;border:1px solid var(--blue);color:#93c5fd;padding:3px 8px;border-radius:3px;line-height:1.5;display:none}
 .profile-badge.on{display:block}
+/* ── 미팅 브리프 ── */
+.meeting-brief-section{margin-bottom:2px}
+.meeting-brief-header{display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:4px 0;user-select:none}
+.meeting-brief-header:hover .section-title{color:var(--accent)}
+.meeting-brief-toggle{font-size:10px;color:var(--muted);transition:transform .2s}
+.meeting-brief-toggle.open{transform:rotate(180deg)}
+.meeting-brief-badge{font-size:9px;background:#052e16;border:1px solid #22c55e;color:#4ade80;padding:2px 6px;border-radius:3px;font-family:'JetBrains Mono',monospace;display:none}
+.meeting-brief-badge.on{display:inline-block}
+.meeting-brief-body{display:none;margin-top:8px}
+.meeting-brief-body.open{display:block}
+.mb-field{margin-bottom:8px}
+.mb-label{font-size:11px;color:var(--muted);margin-bottom:3px;display:block}
+.mb-input{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 10px;font-family:'Noto Sans KR',sans-serif;font-size:13px;outline:none;box-sizing:border-box}
+.mb-input:focus{border-color:var(--accent)}
+.mb-ta{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 10px;font-family:'Noto Sans KR',sans-serif;font-size:13px;outline:none;resize:vertical;min-height:56px;box-sizing:border-box}
+.mb-ta:focus{border-color:var(--accent)}
+.mb-checklist-btn{width:100%;margin-top:4px;background:var(--surface2);border:1px solid var(--blue);color:var(--blue);border-radius:6px;padding:7px 10px;font-family:'Noto Sans KR',sans-serif;font-size:12px;cursor:pointer;transition:all .2s}
+.mb-checklist-btn:hover{background:#0a1a2a}
+.mb-checklist-result{margin-top:8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px;font-size:12px;color:var(--text);white-space:pre-wrap;line-height:1.6;display:none}
+.mb-checklist-result.on{display:block}
+.mb-copy-btn{font-size:11px;background:transparent;border:1px solid var(--border);color:var(--muted);padding:3px 8px;border-radius:4px;cursor:pointer;margin-top:6px;float:right}
+.mb-copy-btn:hover{border-color:var(--accent);color:var(--accent)}
 /* ── 프로필 모달 ── */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:300;align-items:center;justify-content:center}
 .modal-overlay.open{display:flex}
@@ -401,6 +428,11 @@ textarea{resize:vertical;min-height:70px;line-height:1.6}
   <span class="key-status empty" id="key-status">미입력</span>
   <a href="https://console.anthropic.com/settings/keys" target="_blank">키 발급 →</a>
 </div>
+<div class="api-bar" style="padding-top:6px;padding-bottom:8px">
+  <label>OPENAI KEY</label>
+  <input type="password" id="openai-key" placeholder="sk-..." oninput="saveOpenAIKey()"/>
+  <span class="key-status empty" id="openai-key-status">미입력</span>
+</div>
 <div id="token-warning" style="display:none;background:#1a1200;border-bottom:1px solid #3a2a00;padding:8px 24px;display:flex;align-items:center;gap:10px">
   <span style="font-size:11px;color:#fbbf24;font-family:JetBrains Mono,monospace;letter-spacing:0.5px">⚠ 토큰 안내</span>
   <span style="font-size:11px;color:#92400e;line-height:1.6">버튼을 누를 때마다 API 토큰이 소비됩니다 — 아이디어 ~2K / 기획서 ~1.5K / 트리트먼트 ~4K / 대본 ~6K / 스토리보드 ~6K / 썸네일 ~3K &nbsp;·&nbsp; 전체 파이프라인 약 <b style="color:#fbbf24">$0.07~0.10</b> 수준</span>
@@ -447,6 +479,60 @@ textarea{resize:vertical;min-height:70px;line-height:1.6}
       <button class="profile-icon-btn edit" id="profile-edit-btn" onclick="openProfileModal('edit')" style="display:none">편집</button>
     </div>
     <div class="profile-badge" id="profile-badge"></div>
+  </div>
+
+  <!-- ── 미팅 브리프 ── -->
+  <div class="meeting-brief-section">
+    <div class="meeting-brief-header" onclick="toggleMeetingBrief()">
+      <span class="section-title" style="margin-bottom:0">미팅 브리프 <span class="meeting-brief-badge" id="brief-badge">ON</span></span>
+      <span class="meeting-brief-toggle" id="brief-toggle">▼</span>
+    </div>
+    <div class="meeting-brief-body" id="brief-body">
+      <div class="mb-field">
+        <label class="mb-label">이번 콘텐츠 목적</label>
+        <input class="mb-input" id="mb-purpose" placeholder="예: 신제품 런칭, 브랜드 인지도 제고" oninput="updateMeetingBrief('purpose',this.value)">
+      </div>
+      <div class="mb-field">
+        <label class="mb-label">클라이언트 요청사항</label>
+        <textarea class="mb-ta" id="mb-request" placeholder="예: 감성적 톤, 20대 여성 타겟, 제품 USP 강조" oninput="updateMeetingBrief('request',this.value)"></textarea>
+      </div>
+      <div class="mb-field">
+        <label class="mb-label">레퍼런스 URL</label>
+        <input class="mb-input" id="mb-reference" placeholder="예: https://youtube.com/watch?v=..." oninput="updateMeetingBrief('reference',this.value)">
+      </div>
+      <div class="mb-field">
+        <label class="mb-label">특이사항</label>
+        <textarea class="mb-ta" id="mb-note" placeholder="예: 로고 노출 필수, 경쟁사 언급 금지, 촬영일 D-7" oninput="updateMeetingBrief('note',this.value)"></textarea>
+      </div>
+      <button class="mb-checklist-btn" onclick="generateMeetingChecklist()">✓ 미팅 체크리스트 생성</button>
+      <div class="mb-checklist-result" id="mb-checklist-result"></div>
+    </div>
+  </div>
+
+  <!-- ── 피사체 설정 ── -->
+  <div class="meeting-brief-section">
+    <div class="meeting-brief-header" onclick="toggleSubjectSection()">
+      <span class="section-title" style="margin-bottom:0">피사체 설정 (선택) <span class="meeting-brief-badge" id="subject-badge">ON</span></span>
+      <span class="meeting-brief-toggle" id="subject-toggle">▼</span>
+    </div>
+    <div class="meeting-brief-body" id="subject-body">
+      <div class="mb-field">
+        <label class="mb-label">인물 1</label>
+        <input class="mb-input" id="sb-person1" placeholder="예: 30대 여성, 단발, 캐주얼 룩" oninput="updateSubject('person1',this.value)">
+      </div>
+      <div class="mb-field">
+        <label class="mb-label">인물 2</label>
+        <input class="mb-input" id="sb-person2" placeholder="예: 40대 남성, 정장 — 선택" oninput="updateSubject('person2',this.value)">
+      </div>
+      <div class="mb-field">
+        <label class="mb-label">제품/오브젝트</label>
+        <input class="mb-input" id="sb-product" placeholder="예: 로보락 S9, 흰색 원형 로봇청소기" oninput="updateSubject('product',this.value)">
+      </div>
+      <div class="mb-field">
+        <label class="mb-label">배경/공간</label>
+        <input class="mb-input" id="sb-background" placeholder="예: 모던한 거실, 밝은 자연광" oninput="updateSubject('background',this.value)">
+      </div>
+    </div>
   </div>
 
   <div>
@@ -794,6 +880,8 @@ const appState = {
   profiles: JSON.parse(localStorage.getItem('yplan_profiles')||'[]'),
   activeProfileId: localStorage.getItem('yplan_active_profile')||'',
   savedIdeas: JSON.parse(localStorage.getItem('yplan_saved_ideas')||'[]'),
+  meetingBrief: {purpose:'', request:'', reference:'', note:''},
+  subject: {person1:'', person2:'', product:'', background:''},
   stepHistories: {
     plan:      {data:[],idx:-1,barId:'plan-history-bar',conId:'plan-container'},
     treatment: {data:[],idx:-1,barId:'treatment-history-bar',conId:'treatment-container'},
@@ -890,6 +978,66 @@ function getChannelContext(){
   L.push('===========================');
   return L.join(NL);
 }
+function getMeetingBriefContext(){
+  var b=appState.meetingBrief;
+  var parts=[b.purpose,b.request,b.reference,b.note].filter(function(v){return v&&v.trim();});
+  if(!parts.length) return '';
+  var L=['=== 미팅 브리프 ==='];
+  if(b.purpose) L.push('콘텐츠 목적: '+b.purpose);
+  if(b.request) L.push('클라이언트 요청: '+b.request);
+  if(b.reference) L.push('레퍼런스: '+b.reference);
+  if(b.note) L.push('특이사항: '+b.note);
+  L.push('위 내용을 반드시 반영해서 기획해줘.');
+  L.push('=================');
+  return L.join(NL);
+}
+function updateMeetingBrief(key, val){
+  appState.meetingBrief[key]=val;
+  var b=appState.meetingBrief;
+  var hasData=[b.purpose,b.request,b.reference,b.note].some(function(v){return v&&v.trim();});
+  var badge=document.getElementById('brief-badge');
+  if(badge) badge.className='meeting-brief-badge'+(hasData?' on':'');
+}
+function toggleMeetingBrief(){
+  var body=document.getElementById('brief-body');
+  var toggle=document.getElementById('brief-toggle');
+  if(!body||!toggle) return;
+  var isOpen=body.classList.contains('open');
+  body.classList.toggle('open',!isOpen);
+  toggle.classList.toggle('open',!isOpen);
+}
+async function generateMeetingChecklist(){
+  var apiKey=document.getElementById('api-key').value.trim();
+  if(!apiKey){alert('API 키를 먼저 입력해주세요');return;}
+  var resultBox=document.getElementById('mb-checklist-result');
+  resultBox.className='mb-checklist-result on';
+  resultBox.innerHTML='<div class="loading-text">체크리스트 생성 중...</div>';
+  var ctx=getChannelContext();
+  var modeLabel=appState.appMode==='production'?'프로덕션 ('+appState.prodType+')':'유튜브 콘텐츠';
+  var prompt=[
+    '너는 영상 제작 전문 PD야.',
+    '아래 채널/프로젝트 정보를 바탕으로 클라이언트 미팅에서 반드시 확인해야 할 체크리스트를 만들어줘.',
+    ctx,
+    '제작 유형: '+modeLabel,
+    getMeetingBriefContext(),
+    '형식: 카테고리별 ✓ 기호. 카테고리: 콘텐츠 방향 / 타겟 및 메시지 / 제작 조건 / 레퍼런스 / 일정 및 예산.',
+    '마크다운 없이 텍스트로만 출력.'
+  ].filter(Boolean).join(NL);
+  try{
+    var raw=await callAPI(prompt,2000);
+    function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+    resultBox.innerHTML='<button class="mb-copy-btn" onclick="copyMeetingChecklist()">복사</button><pre style="margin:0;white-space:pre-wrap;font-family:\'Noto Sans KR\',sans-serif;font-size:12px">'+esc(raw)+'</pre>';
+  } catch(e){
+    resultBox.innerHTML='<span style="color:#f87171">오류: '+String(e.message||e).replace(/</g,'&lt;')+'</span>';
+  }
+}
+function copyMeetingChecklist(){
+  var pre=document.querySelector('#mb-checklist-result pre');
+  if(!pre)return;
+  navigator.clipboard.writeText(pre.textContent).then(function(){
+    var btn=document.querySelector('.mb-copy-btn');if(btn){btn.textContent='복사됨';setTimeout(function(){btn.textContent='복사';},1500);}
+  });
+}
 function openProfileModal(mode){
   _editingPfId=null;
   var db=document.getElementById('modal-del-btn');
@@ -927,6 +1075,52 @@ function deleteProfile(){
 }
 
 function getKey(){ return document.getElementById('api-key').value.trim(); }
+function saveOpenAIKey(){
+  var k=document.getElementById('openai-key').value.trim();
+  localStorage.setItem('openai_key',k);
+  var s=document.getElementById('openai-key-status');
+  if(s){s.textContent=k?'입력됨 ✓':'미입력';s.className='key-status '+(k?'ok':'empty');}
+}
+async function generateImage(prompt){
+  var key=document.getElementById('openai-key').value.trim();
+  if(!key)return null;
+  var res=await fetch('https://api.openai.com/v1/images/generations',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+    body:JSON.stringify({model:'dall-e-3',prompt:prompt,n:1,size:'1792x1024'})
+  });
+  if(!res.ok)return null;
+  var d=await res.json();
+  return d.data&&d.data[0]?d.data[0].url:null;
+}
+function getSubjectContext(){
+  var s=appState.subject;
+  var parts=[s.person1,s.person2,s.product,s.background].filter(function(v){return v&&v.trim();});
+  if(!parts.length)return '';
+  var L=['=== 피사체 설정 ==='];
+  if(s.person1)L.push('인물1: '+s.person1);
+  if(s.person2)L.push('인물2: '+s.person2);
+  if(s.product)L.push('제품/오브젝트: '+s.product);
+  if(s.background)L.push('배경/공간: '+s.background);
+  L.push('모든 컷에서 위 피사체 설정을 일관되게 유지해줘.');
+  L.push('=================');
+  return L.join(NL);
+}
+function updateSubject(key,val){
+  appState.subject[key]=val;
+  var s=appState.subject;
+  var hasData=[s.person1,s.person2,s.product,s.background].some(function(v){return v&&v.trim();});
+  var badge=document.getElementById('subject-badge');
+  if(badge)badge.className='meeting-brief-badge'+(hasData?' on':'');
+}
+function toggleSubjectSection(){
+  var body=document.getElementById('subject-body');
+  var toggle=document.getElementById('subject-toggle');
+  if(!body||!toggle)return;
+  var isOpen=body.classList.contains('open');
+  body.classList.toggle('open',!isOpen);
+  toggle.classList.toggle('open',!isOpen);
+}
 function checkKey(){
   var k=getKey(), s=document.getElementById('key-status'), w=document.getElementById('token-warning');
   if(k.indexOf('sk-ant-')===0){
@@ -1323,7 +1517,18 @@ function renderStoryboard(raw, title){
     }).join('');
     var s='<div class="sb-cut"><div class="sb-cut-num">'+cutLabel+'</div>';
     s+='<div class="sb-grid">'+gridCells+'</div>';
-    if(cutImg){var iid=id+'i';s+='<div class="prompt-box" style="margin-top:6px"><div class="prompt-label">IMG PROMPT</div><div class="prompt-text" id="'+iid+'">'+cutImg+'</div><button class="prompt-copy-btn" onclick="copyPrompt(\''+iid+'\',this)">COPY</button></div>';}
+    if(cutImg){
+      var iid=id+'i';
+      var hasOAIKey=document.getElementById('openai-key')&&document.getElementById('openai-key').value.trim();
+      var imgAreaId=id+'img';
+      var imgPromptForBtn=cutImg.replace(/'/g,"&#39;");
+      s+='<div class="prompt-box" style="margin-top:6px"><div class="prompt-label">IMG PROMPT</div><div class="prompt-text" id="'+iid+'">'+cutImg+'</div><button class="prompt-copy-btn" onclick="copyPrompt(\''+iid+'\',this)">COPY</button></div>';
+      if(hasOAIKey){
+        s+='<div class="sb-img-area" id="'+imgAreaId+'"><button class="sb-img-gen-btn" onclick="triggerCutImage(\''+imgAreaId+'\',\''+imgPromptForBtn+'\')">🖼 이미지 생성</button></div>';
+      } else {
+        s+='<div class="sb-img-area" id="'+imgAreaId+'"><span class="sb-img-nokey">OpenAI 키 필요</span></div>';
+      }
+    }
     if(cutVid){var vid=id+'v';s+='<div class="prompt-box" style="margin-top:4px"><div class="prompt-label">VID PROMPT</div><div class="prompt-text" id="'+vid+'">'+cutVid+'</div><button class="prompt-copy-btn" onclick="copyPrompt(\''+vid+'\',this)">COPY</button></div>';}
     if(cutNeg){s+='<div class="prompt-neg" style="margin-top:4px"><div class="prompt-neg-label">NEG PROMPT</div><div class="prompt-neg-text">'+cutNeg+'</div></div>';}
     h+=s+'</div>';
@@ -1537,7 +1742,7 @@ function buildIdeaPrompt(count, fmt, allGenre, target, keyword, newsInput){
     return [
       persona+' 아래 실제 사건/뉴스를 기반으로 '+typeLabel+' 아이디어 '+count+'개를 만들어줘.',
       '포맷: '+fmt.join(', ')+' / 장르: '+allGenre.join(', ')+' / 타겟: '+(target.join(', ')||'10대~40대')+(keyword?' / 추가 키워드: '+keyword:''),
-      '포맷 규칙: '+getFormatRule(fmt), ctx,
+      '포맷 규칙: '+getFormatRule(fmt), ctx, getMeetingBriefContext(),
       '=== 실제 사건 / 뉴스 원문 ===',newsInput,'=================','',
       '1. 위 실제 사건/뉴스를 직접 활용한 아이디어만 생성. 2. JSON 배열만 출력. 코드블록 금지.',
       '[{"num":"01","title":"제목","desc":"컨셉 2~3줄","diff":"상/중/하","growth":"★★★★☆","source":"원문 핵심 사실 1줄"}]',
@@ -1547,7 +1752,7 @@ function buildIdeaPrompt(count, fmt, allGenre, target, keyword, newsInput){
   return [
     persona+' 아래 조건으로 '+typeLabel+' 아이디어 '+count+'개를 만들어줘.',
     '포맷: '+fmt.join(', ')+' / 장르: '+allGenre.join(', ')+' / 타겟: '+(target.join(', ')||'10대~40대')+(keyword?' / 키워드: '+keyword:''),
-    '포맷 규칙: '+getFormatRule(fmt), ctx,
+    '포맷 규칙: '+getFormatRule(fmt), ctx, getMeetingBriefContext(),
     'JSON 배열만 출력. 코드블록 금지.',
     '[{"num":"01","title":"제목","desc":"컨셉2~3줄","diff":"상/중/하","growth":"★★★★☆"}]',
     '정확히 '+count+'개. 마지막 } 뒤 ] 로 닫아줘.'
@@ -1592,7 +1797,7 @@ async function regenerateFailedIdeas(ideas, failIdxs, evalResults, fmt, allGenre
   if(!failIdxs.length) return {ideas:ideas,evalResults:evalResults};
   var retryPrompt=[
     getPersona()+' 아이디어 '+failIdxs.length+'개를 새롭게 만들어줘.',
-    getChannelContext(),
+    getChannelContext(), getMeetingBriefContext(),
     '포맷: '+fmt.join(', ')+' / 장르: '+allGenre.join(', ')+' / 타겟: '+(target.join(', ')||'10대~40대')+(keyword?' / 키워드: '+keyword:''),
     '포맷 규칙: '+getFormatRule(fmt),'',
     '아래 탈락 아이디어들의 문제점을 반드시 개선해줘:',
@@ -1980,7 +2185,7 @@ async function selectIdea(card,idea){
     '포맷 규칙: '+fmtRule,
     modeRule,
     runtimeRule,
-    ctx,
+    ctx, getMeetingBriefContext(),
     '중요: hook(첫 3초 훅)은 반드시 구체적이고 20자 이상으로 작성할 것. target과 revenue도 구체적으로.',
     '',
     'JSON만 출력. 코드블록과 설명 없이.',
@@ -2111,7 +2316,7 @@ async function generateTreatment(){
 
   var basePrompt=[
     getPersona()+' 영상 1편의 트리트먼트를 작성해줘.',
-    getChannelContext(),
+    getChannelContext(), getMeetingBriefContext(),
     '콘텐츠명: '+appState.plan.title,
     '포맷: '+fmt,'목표 러닝타임: '+totalTime,
     '첫 3초 훅: '+appState.plan.hook,
@@ -2227,7 +2432,7 @@ async function generateScript(){
 
   var basePrompt=[
     getPersona()+' 영상 1편의 대본을 작성해줘.',
-    getChannelContext(),
+    getChannelContext(), getMeetingBriefContext(),
     '콘텐츠명: '+appState.treatment.title,'포맷: '+fmt,'장르: '+genre.join(', '),'',
     chrRule,'',
     '=== 트리트먼트 ===',appState.treatment.raw,'=================','',
@@ -2334,7 +2539,7 @@ async function generateStoryboard(){
     '너는 영상 제작 전문 콘티 작가야.',
     '아래 트리트먼트를 기반으로 컷 단위 스토리보드 시트를 작성해줘.',
     '콘텐츠명: '+appState.treatment.title,
-    getChannelContext(),
+    getChannelContext(), getMeetingBriefContext(), getSubjectContext(),
     '=== 트리트먼트 ===',appState.treatment.raw,'=================','',
     '규칙:',
     '1. 각 Scene을 2~4개 Cut으로 분해해줘.',
@@ -2456,7 +2661,7 @@ async function generateThumbnail(){
   var prompt=[
     '유튜브 썸네일 기획서를 3가지 안으로 작성해줘.',
     '콘텐츠명: '+appState.plan.title,'타겟: '+appState.plan.target,'핵심 훅: '+appState.plan.hook,
-    getChannelContext(),
+    getChannelContext(), getMeetingBriefContext(),
     '규칙: 마크다운 없이 아래 형식만 사용.','',
     '[안 1] 컨셉 이름',
     '레이아웃: 구성 요소와 배치 설명',
@@ -2680,9 +2885,35 @@ function copyPrompt(id,btn){
     btn.textContent='COPIED!';setTimeout(function(){btn.textContent='COPY';},2000);
   });
 }
+async function triggerCutImage(areaId, imgPrompt){
+  var area=document.getElementById(areaId);
+  if(!area)return;
+  area.innerHTML='<div class="sb-img-loading"><div class="loader" style="width:20px;height:20px;border-width:2px"></div><span style="font-size:11px;color:var(--muted)">생성 중...</span></div>';
+  var subCtx=getSubjectContext();
+  var finalPrompt=(subCtx?subCtx+'\n':'')+imgPrompt;
+  try{
+    var url=await generateImage(finalPrompt);
+    if(url){
+      area.innerHTML='<img src="'+url+'" style="width:100%;border-radius:6px;margin-top:4px;display:block" alt="generated">';
+    } else {
+      area.innerHTML='<button class="sb-img-gen-btn" style="color:#f87171;border-color:#f87171" onclick="triggerCutImage(\''+areaId+'\',\''+imgPrompt.replace(/'/g,"&#39;")+'\'")">생성 실패 — 다시 시도</button>';
+    }
+  } catch(e){
+    area.innerHTML='<button class="sb-img-gen-btn" style="color:#f87171;border-color:#f87171" onclick="triggerCutImage(\''+areaId+'\',\''+imgPrompt.replace(/'/g,"&#39;")+'\'")">생성 실패 — 다시 시도</button>';
+  }
+}
 
 // ── 초기화 ──
 renderProfileSelect();
+(function initOpenAIKey(){
+  var saved=localStorage.getItem('openai_key');
+  if(saved){
+    var el=document.getElementById('openai-key');
+    if(el)el.value=saved;
+    var s=document.getElementById('openai-key-status');
+    if(s){s.textContent='입력됨 ✓';s.className='key-status ok';}
+  }
+})();
 (function initSavedBadge(){
   var tabBtn=document.getElementById('tab-btn-saved');
   if(tabBtn&&appState.savedIdeas.length>0) tabBtn.textContent='★ 저장됨 ('+appState.savedIdeas.length+')';
