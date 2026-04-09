@@ -1,0 +1,1364 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PPLAN — SNP 영상 기획서 자동화</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#080809;--surface:#0f0f11;--surface2:#161618;--surface3:#1e1e21;
+  --border:#252528;--border2:#2e2e33;
+  --accent:#e8c84a;--accent2:#f0a030;--accent-dim:#2a2410;
+  --text:#ededec;--muted:#6b6b72;--muted2:#3a3a3f;
+  --success:#3ecf70;--blue:#5b9cf6;--purple:#b57bee;--red:#e85c5c;--trend:#f0a030;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;min-height:100vh;font-size:14px;line-height:1.6}
+
+header{border-bottom:1px solid var(--border);padding:13px 24px;display:flex;align-items:center;justify-content:space-between;background:var(--bg);position:sticky;top:0;z-index:20}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:21px;letter-spacing:4px;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.logo-sub{font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;letter-spacing:1px;margin-left:10px;-webkit-text-fill-color:var(--muted)}
+.logo-badge{font-size:10px;background:#16140a;border:1px solid rgba(232,200,74,.35);color:var(--accent);padding:2px 9px;border-radius:3px;font-family:'JetBrains Mono',monospace;margin-left:8px;-webkit-text-fill-color:var(--accent)}
+.header-right{display:flex;align-items:center;gap:8px}
+.hdr-btn{background:var(--surface2);border:1px solid var(--border);color:var(--muted);font-size:11px;padding:6px 13px;border-radius:5px;cursor:pointer;font-family:'JetBrains Mono',monospace;transition:all .2s;display:none}
+.hdr-btn:hover{border-color:var(--accent);color:var(--accent)}
+.hdr-btn.vis{display:block}
+.hdr-history{display:block !important;position:relative}
+.hist-cnt{background:var(--accent);color:#000;font-size:9px;padding:1px 5px;border-radius:10px;margin-left:5px;font-weight:700}
+
+.step-bar{border-bottom:1px solid var(--border);padding:10px 24px;display:none;gap:6px;align-items:center;background:var(--bg)}
+.step-bar.vis{display:flex}
+.sb-item{display:flex;align-items:center;gap:5px;flex-shrink:0}
+.sb-dot{width:26px;height:26px;border-radius:50%;border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:9px;font-family:'JetBrains Mono',monospace;color:var(--muted);transition:all .3s}
+.sb-dot.done{background:var(--success);border-color:var(--success);color:#000;font-weight:700}
+.sb-dot.active{background:var(--accent);border-color:var(--accent);color:#000;font-weight:700}
+.sb-label{font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;white-space:nowrap}
+.sb-label.done{color:var(--success)}
+.sb-label.active{color:var(--text)}
+.sb-arrow{color:var(--muted2);font-size:11px;margin:0 3px}
+
+main{display:grid;grid-template-columns:300px 1fr;min-height:calc(100vh - 53px)}
+aside{border-right:1px solid var(--border);padding:20px;display:flex;flex-direction:column;gap:16px;background:var(--surface);overflow-y:auto;max-height:calc(100vh - 53px)}
+.content-area{padding:28px;overflow-y:auto;max-height:calc(100vh - 53px)}
+
+.sec-label{font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;font-family:'JetBrains Mono',monospace;margin-bottom:7px}
+select,input[type="text"],textarea{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:9px 12px;font-family:'Noto Sans KR',sans-serif;font-size:13px;outline:none;transition:border-color .2s;appearance:none}
+select:focus,input:focus,textarea:focus{border-color:var(--accent)}
+textarea{resize:vertical;min-height:72px;line-height:1.7}
+.chip-group{display:flex;flex-wrap:wrap;gap:5px}
+.chip{background:var(--surface2);border:1px solid var(--border);color:var(--muted);font-size:11px;padding:4px 11px;border-radius:20px;cursor:pointer;transition:all .2s;user-select:none}
+.chip.active{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+.chip:hover:not(.active){border-color:var(--border2);color:var(--text)}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.generate-btn{background:var(--accent);color:#000;border:none;border-radius:8px;padding:13px;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;cursor:pointer;transition:all .2s;width:100%;margin-top:auto}
+.generate-btn:hover{background:var(--accent2);transform:translateY(-1px)}
+.generate-btn:disabled{background:var(--muted2);color:var(--muted);cursor:not-allowed;transform:none}
+.field-hint{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.6}
+
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:420px;gap:14px;text-align:center}
+.empty-icon{font-size:48px;opacity:.15}
+.empty-state h3{font-size:18px;font-weight:400;color:var(--muted);font-family:'Bebas Neue',sans-serif;letter-spacing:2px}
+.empty-state p{font-size:12px;color:var(--muted2);max-width:280px;line-height:2}
+
+.loading-state{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:180px;gap:14px}
+.loader{width:28px;height:28px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace}
+
+.error-box{background:#180a0a;border:1px solid #4a1515;border-radius:8px;padding:14px;color:#ff9090;font-size:13px;line-height:1.9}
+.retry-btn{margin-top:10px;background:var(--accent);color:#000;border:none;padding:7px 18px;border-radius:5px;cursor:pointer;font-size:12px;font-family:'Noto Sans KR',sans-serif;font-weight:500}
+
+.result-section{margin-bottom:30px;animation:fadeIn .35s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.result-header{display:flex;align-items:center;gap:10px;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.step-badge{color:#000;font-size:10px;font-family:'JetBrains Mono',monospace;letter-spacing:1px;padding:3px 10px;border-radius:3px;font-weight:700}
+.result-title{font-size:15px;font-weight:500}
+.copy-btn{background:var(--surface2);border:1px solid var(--border);color:var(--muted);font-size:10px;padding:4px 10px;border-radius:4px;cursor:pointer;font-family:'JetBrains Mono',monospace;transition:all .2s;margin-left:auto}
+.copy-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+.eval-bar{background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:12px 16px;margin-bottom:14px;display:none}
+.eval-bar.vis{display:block}
+.eval-title{font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;letter-spacing:1px;margin-bottom:8px}
+.eval-items{display:flex;gap:8px;flex-wrap:wrap}
+.eval-item{font-size:10px;font-family:'JetBrains Mono',monospace;padding:3px 9px;border-radius:3px;border:1px solid}
+.eval-pass{background:#071a0e;border-color:rgba(62,207,112,.3);color:var(--success)}
+.eval-warn{background:#1a1200;border-color:rgba(240,160,48,.3);color:var(--accent2)}
+.eval-score{font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:8px}
+
+.doc-wrap{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.doc-header{padding:16px 20px;border-bottom:1px solid var(--border)}
+.doc-header-title{font-size:16px;font-weight:700}
+.doc-header-sub{font-size:11px;color:var(--muted);margin-top:3px;font-family:'JetBrains Mono',monospace}
+
+.prop-table{width:100%;border-collapse:collapse}
+.prop-table td{padding:11px 15px;border-bottom:1px solid var(--border);vertical-align:top;font-size:13px}
+.prop-table tr:last-child td{border-bottom:none}
+.prop-key{font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;text-transform:uppercase;white-space:nowrap;width:110px;padding-right:20px}
+.prop-val{color:var(--text);line-height:1.8}
+
+.concept-block{padding:16px 20px;border-bottom:1px solid var(--border)}
+.concept-block:last-child{border-bottom:none}
+.concept-label{font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.concept-body{font-size:13px;line-height:1.9;color:var(--text)}
+.concept-body.intent{color:#d4c87a;font-style:italic;line-height:2.1}
+.concept-body.key{font-size:15px;font-weight:700;color:var(--accent);line-height:1.5}
+.tone-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.tone-tag{background:var(--surface3);border:1px solid var(--border2);color:var(--muted);font-size:11px;padding:3px 10px;border-radius:20px}
+
+.sb-wrap{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.sb-scene{border-bottom:1px solid var(--border);padding:14px 18px;transition:background .2s}
+.sb-scene:last-child{border-bottom:none}
+.sb-scene:hover{background:var(--surface2)}
+.sb-scene-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.sb-num{font-family:'Bebas Neue',sans-serif;font-size:13px;color:var(--accent);letter-spacing:1px;background:var(--accent-dim);border:1px solid rgba(232,200,74,.25);padding:2px 10px;border-radius:3px}
+.sb-time{font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-left:auto}
+.sb-location{font-size:12px;color:var(--blue);font-family:'JetBrains Mono',monospace}
+.sb-grid{display:grid;grid-template-columns:1fr 1fr;gap:0}
+.sb-cell{padding:8px 10px;font-size:12px;border-top:1px solid var(--border)}
+.sb-cell:nth-child(odd){border-right:1px solid var(--border)}
+.sb-cell-label{font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:4px}
+.sb-cell-body{color:var(--text);line-height:1.7}
+.sb-cell-body.vo{color:#fcd34d;font-style:italic}
+.caption-chip{background:#1a1a2e;border:1px solid rgba(91,156,246,.3);color:#93c5fd;font-size:10px;padding:2px 7px;border-radius:3px;font-family:'JetBrains Mono',monospace;display:inline-block;margin:2px 3px}
+
+.guide-ep{border-bottom:1px solid var(--border);padding:16px 18px}
+.guide-ep:last-child{border-bottom:none}
+.ep-badge{font-family:'Bebas Neue',sans-serif;font-size:12px;color:var(--accent);letter-spacing:2px;margin-bottom:8px}
+.ep-title{font-size:15px;font-weight:700;margin-bottom:12px}
+.step-flow{display:grid;gap:8px}
+.flow-step{background:var(--surface2);border:1px solid var(--border2);border-radius:7px;padding:12px 14px}
+.flow-step-header{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.flow-num{font-family:'Bebas Neue',sans-serif;font-size:11px;padding:2px 9px;border-radius:3px;letter-spacing:1px}
+.fn-s1{background:#0d1f0d;color:var(--success);border:1px solid rgba(62,207,112,.3)}
+.fn-s2{background:#0d1625;color:var(--blue);border:1px solid rgba(91,156,246,.3)}
+.fn-s3{background:#1a0d20;color:var(--purple);border:1px solid rgba(181,123,238,.3)}
+.flow-label{font-size:13px;font-weight:500}
+.flow-body{font-size:12px;color:var(--muted);line-height:1.8}
+.flow-points{margin-top:6px;display:flex;flex-direction:column;gap:3px}
+.flow-point{font-size:12px;color:var(--text);padding-left:12px;position:relative;line-height:1.7}
+.flow-point::before{content:'·';position:absolute;left:0;color:var(--accent)}
+
+.next-btn{display:flex;align-items:center;gap:12px;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:14px 18px;cursor:pointer;transition:all .2s;width:100%;margin-top:14px;text-align:left}
+.next-btn:hover{transform:translateY(-2px);border-color:var(--accent)}
+.next-btn-icon{font-family:'Bebas Neue',sans-serif;font-size:11px;letter-spacing:1px;padding:4px 11px;border-radius:4px;white-space:nowrap}
+.next-btn-text{font-size:13px;font-weight:500}
+.next-btn-sub{font-size:11px;color:var(--muted);margin-top:2px}
+
+.hist-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:50;display:none;align-items:flex-start;justify-content:flex-end;padding:60px 20px 20px}
+.hist-overlay.vis{display:flex}
+.hist-panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;width:360px;max-height:calc(100vh - 80px);overflow-y:auto}
+.hp-header{padding:16px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.hp-title{font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:2px;color:var(--accent)}
+.hp-close{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;line-height:1}
+.hp-empty{padding:30px;text-align:center;color:var(--muted);font-size:12px;line-height:2}
+.hist-item{padding:14px 18px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s}
+.hist-item:last-child{border-bottom:none}
+.hist-item:hover{background:var(--surface2)}
+.hi-title{font-size:13px;font-weight:500;margin-bottom:4px}
+.hi-meta{font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.hi-genre{color:var(--accent)}
+.hi-del{background:none;border:1px solid var(--border);color:var(--muted);font-size:9px;padding:2px 7px;border-radius:3px;cursor:pointer;margin-left:auto;font-family:'JetBrains Mono',monospace;transition:all .2s}
+.hi-del:hover{border-color:var(--red);color:var(--red)}
+
+.prev-overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:60;display:none;flex-direction:column;align-items:center;padding:20px;overflow-y:auto}
+.prev-overlay.vis{display:flex}
+.prev-actions{display:flex;gap:10px;margin-bottom:16px;align-items:center;width:100%;max-width:820px}
+.pv-btn{background:var(--accent);color:#000;border:none;padding:9px 20px;border-radius:6px;font-size:13px;cursor:pointer;font-family:'Bebas Neue',sans-serif;letter-spacing:2px}
+.pv-btn.sec{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+.pv-btn:hover{opacity:.85}
+.prev-box{background:#fff;color:#111;width:100%;max-width:820px;border-radius:8px;overflow:hidden}
+
+/* ── SNP PPM 스타일 출력 레이아웃 ── */
+.print-doc{font-family:'Noto Sans KR',sans-serif;color:#111;max-width:900px;margin:0 auto}
+/* 표지 — 다크 */
+.print-cover{background:#1c1c1e;color:#fff;padding:56px 60px 48px;min-height:460px;position:relative;display:flex;flex-direction:column;justify-content:flex-end}
+.print-cover-snp{font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:4px;color:rgba(255,255,255,.35);position:absolute;top:32px;right:48px}
+.print-cover-cat{font-size:10px;color:rgba(255,255,255,.35);letter-spacing:2.5px;margin-bottom:16px;font-family:'JetBrains Mono',monospace;text-transform:uppercase}
+.print-cover-title{font-size:40px;font-weight:700;line-height:1.2;margin-bottom:22px;letter-spacing:-.5px}
+.print-cover-sub{font-size:11px;color:rgba(255,255,255,.4);font-family:'JetBrains Mono',monospace;letter-spacing:1.5px}
+.print-cover-copy{font-size:10px;color:rgba(255,255,255,.22);font-family:'JetBrains Mono',monospace;position:absolute;bottom:28px;left:60px}
+.print-cover-datestr{font-size:10px;color:rgba(255,255,255,.22);font-family:'JetBrains Mono',monospace;position:absolute;bottom:28px;right:60px}
+/* 본문 페이지 */
+.print-page{background:#fff;padding:38px 52px 44px;position:relative;border-bottom:1px solid #ebebeb;page-break-after:always}
+/* 페이지 헤더 */
+.print-pg-hd{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px}
+.print-pg-section{font-size:9px;color:#bbb;letter-spacing:2px;font-family:'JetBrains Mono',monospace;text-transform:uppercase;margin-bottom:5px}
+.print-pg-title{font-size:21px;font-weight:700;color:#111;line-height:1.2}
+.print-pg-snp{font-family:'Bebas Neue',sans-serif;font-size:11px;letter-spacing:3px;color:#ccc;padding-top:2px}
+/* 본문 테이블 */
+.print-table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:0}
+.print-table tr:first-child td{border-top:1px solid #222}
+.print-table td{padding:11px 14px;border-bottom:1px solid #e8e8e8;vertical-align:top;line-height:1.7}
+.print-lk{font-size:12px;font-weight:700;color:#111;width:120px;white-space:nowrap;vertical-align:middle}
+.print-lv{color:#444}
+/* Director Intention */
+.print-intent-box{margin-top:18px;padding:16px 20px 16px 22px;border-left:3px solid #111;background:#fafafa}
+.print-intent-lbl{font-size:9px;color:#aaa;letter-spacing:2px;font-family:'JetBrains Mono',monospace;text-transform:uppercase;margin-bottom:8px}
+.print-intent-body{font-size:13px;line-height:2.1;font-style:italic;color:#333}
+/* 스토리보드 씬 — SNP 텍스트 스타일 */
+.print-scene-block{padding:18px 0;border-bottom:1px solid #eee;page-break-inside:avoid}
+.print-scene-block:last-child{border-bottom:none}
+.print-scene-idx{font-family:'JetBrains Mono',monospace;font-size:10px;color:#bbb;letter-spacing:1px;margin-bottom:4px}
+.print-scene-loc{font-size:14px;font-weight:700;color:#111;margin-bottom:6px;line-height:1.5}
+.print-scene-desc{font-size:13px;color:#333;line-height:1.9;margin-bottom:8px}
+.print-scene-na{font-size:13px;color:#555;font-style:italic;line-height:1.8;padding-left:14px;border-left:2px solid #ddd;margin-bottom:5px}
+.print-scene-cap{font-size:12px;color:#999;padding-left:14px;line-height:1.7}
+/* 에피소드 가이드 */
+.print-ep-block{padding:18px 0;border-bottom:1px solid #eee;page-break-inside:avoid}
+.print-ep-block:last-child{border-bottom:none}
+.print-ep-num{font-family:'JetBrains Mono',monospace;font-size:9px;color:#aaa;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px}
+.print-ep-title{font-size:16px;font-weight:700;color:#111;margin-bottom:14px}
+.print-ep-step{display:flex;gap:14px;margin-bottom:8px}
+.print-ep-step-lbl{font-size:11px;font-weight:700;color:#111;white-space:nowrap;min-width:86px;padding-top:1px}
+.print-ep-step-body{font-size:12px;color:#555;line-height:1.85}
+.print-ep-pt{font-size:11px;color:#444;padding-left:13px;line-height:1.85;position:relative}
+.print-ep-pt::before{content:'·';position:absolute;left:3px;color:#bbb}
+/* 페이지 번호 */
+.print-pg-num{text-align:right;font-size:10px;color:#ccc;font-family:'JetBrains Mono',monospace;margin-top:28px}
+/* 푸터 */
+.print-footer{border-top:1px solid #eee;padding-top:11px;font-size:9px;color:#ccc;font-family:'JetBrains Mono',monospace;display:flex;justify-content:space-between;margin-top:32px}
+
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-thumb{background:var(--muted2);border-radius:2px}
+
+@media(max-width:768px){main{grid-template-columns:1fr}aside{max-height:none;border-right:none;border-bottom:1px solid var(--border)}header{padding:10px 16px;flex-wrap:wrap;gap:8px}.header-right{width:100%;justify-content:flex-end}.logo-sub{display:none}}
+</style>
+</head>
+<body>
+
+<header>
+  <div style="display:flex;align-items:center">
+    <span class="logo">PPLAN</span>
+    <span class="logo-sub">SNP 영상 기획서 자동화</span>
+    <span class="logo-badge">v1.0</span>
+  </div>
+  <div class="header-right">
+    <button class="hdr-btn" id="export-btn" onclick="openExport()">↓ 내보내기</button>
+    <button class="hdr-btn hdr-history" onclick="openHistory()">HISTORY <span class="hist-cnt" id="hist-cnt">0</span></button>
+    <button class="hdr-btn" id="reset-btn" onclick="resetAll()">↺ 새 문서</button>
+  </div>
+</header>
+
+<div class="step-bar" id="step-bar">
+  <div class="sb-item"><div class="sb-dot" id="sb1">1</div><span class="sb-label" id="sl1">기본정보</span></div>
+  <span class="sb-arrow">›</span>
+  <div class="sb-item"><div class="sb-dot" id="sb2">2</div><span class="sb-label" id="sl2">제안개요</span></div>
+  <span class="sb-arrow">›</span>
+  <div class="sb-item"><div class="sb-dot" id="sb3">3</div><span class="sb-label" id="sl3">컨셉&amp;메시지</span></div>
+  <span class="sb-arrow">›</span>
+  <div class="sb-item"><div class="sb-dot" id="sb4">4</div><span class="sb-label" id="sl4">스토리보드</span></div>
+</div>
+
+<main>
+<aside>
+  <!-- API 키 설정 -->
+  <div style="border:1px solid var(--border2);border-radius:8px;padding:14px;background:var(--surface2)">
+    <div class="sec-label" style="margin-bottom:10px">API 키 설정</div>
+    <div style="margin-bottom:8px">
+      <div class="sec-label">ANTHROPIC KEY</div>
+      <input type="password" id="anthropic-key" placeholder="sk-ant-..." oninput="localStorage.setItem('anthropic_key',this.value)">
+    </div>
+    <div>
+      <div class="sec-label">OPENAI KEY</div>
+      <input type="password" id="openai-key" placeholder="sk-..." oninput="localStorage.setItem('openai_key',this.value)">
+    </div>
+  </div>
+
+  <!-- STEP 00 미팅 체크리스트 -->
+  <div style="border:1px solid var(--border2);border-radius:8px;padding:14px;background:var(--surface2)">
+    <div class="sec-label" style="margin-bottom:10px">STEP 00 — 미팅 체크리스트</div>
+    <select id="inp-checklist-type" style="margin-bottom:8px">
+      <option value="브랜드필름">브랜드필름</option>
+      <option value="광고">광고</option>
+      <option value="유튜브시리즈">유튜브시리즈</option>
+      <option value="기념영상">기념영상</option>
+      <option value="뮤직비디오">뮤직비디오</option>
+    </select>
+    <button id="checklist-btn" onclick="generateChecklist()" style="background:var(--surface2);border:1px solid var(--blue);color:var(--blue);width:100%;padding:8px;border-radius:6px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;font-size:13px;transition:all .2s;margin-bottom:8px">📋 체크리스트 생성</button>
+    <div id="checklist-result" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <span style="font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;letter-spacing:1px">CHECKLIST</span>
+        <button class="copy-btn" onclick="copyEl('checklist-text')">COPY</button>
+      </div>
+      <div id="checklist-text" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:12px;font-size:12px;line-height:1.9;white-space:pre-wrap;max-height:260px;overflow-y:auto"></div>
+      <div style="margin-top:8px;font-size:11px;color:var(--success);font-family:'JetBrains Mono',monospace">✓ 미팅 완료 — STEP 01 입력 시작</div>
+    </div>
+    <button id="biz-btn" onclick="generateBizAnalysis()" style="background:var(--surface2);border:1px solid var(--trend);color:var(--trend);width:100%;padding:8px;border-radius:6px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;font-size:13px;transition:all .2s;margin-top:8px">💰 사업성 분석</button>
+    <div id="biz-result" style="display:none;margin-top:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <span style="font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;letter-spacing:1px">사업성 분석</span>
+        <button class="copy-btn" onclick="copyEl('biz-cards')">COPY</button>
+      </div>
+      <div id="biz-cards"></div>
+    </div>
+  </div>
+
+  <div>
+    <div class="sec-label">클라이언트명</div>
+    <input type="text" id="inp-client" placeholder="예: 현대자동차, 스타벅스 코리아">
+  </div>
+  <div>
+    <div class="sec-label">프로젝트명 / 영상 제목</div>
+    <input type="text" id="inp-project" placeholder="예: 2025 브랜드 필름 '여정'">
+  </div>
+  <div>
+    <div class="sec-label">장르</div>
+    <div class="chip-group" id="chips-genre">
+      <div class="chip active" onclick="selectGenre(this,'브랜드필름')">브랜드필름</div>
+      <div class="chip" onclick="selectGenre(this,'광고')">광고 (CF)</div>
+      <div class="chip" onclick="selectGenre(this,'유튜브시리즈')">유튜브 시리즈</div>
+      <div class="chip" onclick="selectGenre(this,'기념영상')">기념영상</div>
+    </div>
+  </div>
+  <div class="field-row">
+    <div>
+      <div class="sec-label">영상 길이</div>
+      <input type="text" id="inp-duration" placeholder="예: 3분 / 30초">
+    </div>
+    <div>
+      <div class="sec-label">편수</div>
+      <input type="text" id="inp-episodes" placeholder="예: 1편 / 5부작">
+    </div>
+  </div>
+  <div>
+    <div class="sec-label">제작 포인트 / 핵심 요구사항</div>
+    <textarea id="inp-points" placeholder="예: 감동적 스토리텔링, 제품 자연스럽게 노출, 20-30대 여성 타겟, 브랜드 가치관 전달"></textarea>
+  </div>
+  <div>
+    <div class="sec-label">콘텐츠 목적</div>
+    <input type="text" id="inp-purpose" placeholder="예: 신제품 론칭, 브랜드 인지도">
+  </div>
+  <div>
+    <div class="sec-label">클라이언트 요청사항</div>
+    <textarea id="inp-request" placeholder="예: 제품 사용 장면 필수, 특정 모델 출연"></textarea>
+  </div>
+  <div>
+    <div class="sec-label">레퍼런스 URL</div>
+    <input type="text" id="inp-refurl" placeholder="유튜브 링크 또는 스타일 키워드">
+  </div>
+  <div>
+    <div class="sec-label">특이사항</div>
+    <textarea id="inp-note" placeholder="예: 촬영일 3/29, 야외 불가, 출연자 2명"></textarea>
+  </div>
+  <!-- 피사체 설정 -->
+  <div style="border:1px solid var(--border2);border-radius:8px;padding:14px;background:var(--surface2)">
+    <div class="sec-label" style="margin-bottom:10px">피사체 설정 (선택)</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div>
+        <div class="sec-label">인물 1</div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input type="text" id="inp-person1" placeholder="예: 30대 여성, 단발, 캐주얼 룩" style="flex:1">
+          <button id="upload-person1" onclick="handleSubjectUpload('inp-person1',this)" style="background:var(--surface);border:1px solid var(--border);color:var(--muted);padding:8px 10px;border-radius:6px;cursor:pointer;font-size:13px;flex-shrink:0;transition:all .2s" title="이미지로 분석">📷</button>
+        </div>
+      </div>
+      <div>
+        <div class="sec-label">인물 2</div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input type="text" id="inp-person2" placeholder="예: 40대 남성, 정장 — 선택" style="flex:1">
+          <button id="upload-person2" onclick="handleSubjectUpload('inp-person2',this)" style="background:var(--surface);border:1px solid var(--border);color:var(--muted);padding:8px 10px;border-radius:6px;cursor:pointer;font-size:13px;flex-shrink:0;transition:all .2s" title="이미지로 분석">📷</button>
+        </div>
+      </div>
+      <div>
+        <div class="sec-label">제품/오브젝트</div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input type="text" id="inp-product" placeholder="예: 로보락 S9, 흰색 원형 로봇청소기" style="flex:1">
+          <button id="upload-product" onclick="handleSubjectUpload('inp-product',this)" style="background:var(--surface);border:1px solid var(--border);color:var(--muted);padding:8px 10px;border-radius:6px;cursor:pointer;font-size:13px;flex-shrink:0;transition:all .2s" title="이미지로 분석">📷</button>
+        </div>
+      </div>
+      <div>
+        <div class="sec-label">배경/공간</div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input type="text" id="inp-bg" placeholder="예: 모던한 거실, 밝은 자연광" style="flex:1">
+          <button id="upload-bg" onclick="handleSubjectUpload('inp-bg',this)" style="background:var(--surface);border:1px solid var(--border);color:var(--muted);padding:8px 10px;border-radius:6px;cursor:pointer;font-size:13px;flex-shrink:0;transition:all .2s" title="이미지로 분석">📷</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <button class="generate-btn" id="gen-btn" onclick="startGenerate()">⚡ 기획서 자동 생성</button>
+</aside>
+
+<div class="content-area">
+  <div class="empty-state" id="empty-state">
+    <div class="empty-icon">🎞</div>
+    <h3>PPM 기획서 준비 완료</h3>
+    <p>클라이언트 정보와 프로젝트 요건을 입력하고<br>생성 버튼을 누르면<br>STEP 01 → 04 자동으로 완성됩니다</p>
+  </div>
+
+  <div id="result-area" style="display:none">
+
+    <!-- STEP 01 요약 -->
+    <div class="result-section" id="sec-summary" style="display:none">
+      <div class="result-header">
+        <span class="step-badge" style="background:var(--accent)">STEP 01</span>
+        <span class="result-title">프로젝트 기본정보</span>
+      </div>
+      <div id="summary-container"></div>
+    </div>
+
+    <!-- STEP 02 제안개요 -->
+    <div id="sec-overview" style="display:none">
+      <div class="result-section">
+        <div class="result-header">
+          <span class="step-badge" style="background:var(--blue)">STEP 02</span>
+          <span class="result-title">제안개요 + 디렉터 인텐션</span>
+          <button class="copy-btn" onclick="copyEl('overview-container')">COPY</button>
+        </div>
+        <div class="eval-bar" id="eval-bar">
+          <div class="eval-title">SELF EVALUATION — 자가평가</div>
+          <div class="eval-items" id="eval-items"></div>
+          <div class="eval-score" id="eval-score"></div>
+        </div>
+        <div id="overview-container"></div>
+        <button class="next-btn" id="next-concept-btn" onclick="generateConcept()" style="display:none;border-color:#1a2510">
+          <span class="next-btn-icon" style="background:#0a1a08;color:var(--success);border:1px solid rgba(62,207,112,.3)">STEP 03</span>
+          <div><div class="next-btn-text">컨셉 &amp; 메시지 생성</div><div class="next-btn-sub">톤앤매너 · 키메시지 · 크리에이티브 컨셉</div></div>
+        </button>
+      </div>
+    </div>
+
+    <!-- STEP 03 컨셉/메시지 -->
+    <div id="sec-concept" style="display:none">
+      <div class="result-section">
+        <div class="result-header">
+          <span class="step-badge" style="background:var(--success);color:#000">STEP 03</span>
+          <span class="result-title">컨셉 및 메시지</span>
+          <button class="copy-btn" onclick="copyEl('concept-container')">COPY</button>
+        </div>
+        <div id="concept-container"></div>
+        <button class="next-btn" id="next-board-btn" onclick="generateBoard()" style="display:none;border-color:#15101a">
+          <span class="next-btn-icon" style="background:#100d1a;color:var(--purple);border:1px solid rgba(181,123,238,.3)">STEP 04</span>
+          <div><div class="next-btn-text" id="board-btn-text">스토리보드 생성</div><div class="next-btn-sub" id="board-btn-sub">씬별 장면묘사 · SOV 대사 · TEXT 자막</div></div>
+        </button>
+      </div>
+    </div>
+
+    <!-- STEP 04 스토리보드 -->
+    <div id="sec-board" style="display:none">
+      <div class="result-section">
+        <div class="result-header">
+          <span class="step-badge" style="background:var(--purple)">STEP 04</span>
+          <span class="result-title" id="board-title">스토리보드</span>
+          <button class="copy-btn" onclick="copyEl('board-container')">COPY</button>
+        </div>
+        <div id="board-container"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</main>
+
+<!-- HISTORY OVERLAY -->
+<div class="hist-overlay" id="hist-overlay" onclick="bgClose(event,'hist-overlay',closeHistory)">
+  <div class="hist-panel" onclick="event.stopPropagation()">
+    <div class="hp-header"><span class="hp-title">HISTORY</span><button class="hp-close" onclick="closeHistory()">✕</button></div>
+    <div id="hist-list"></div>
+  </div>
+</div>
+
+<!-- EXPORT OVERLAY -->
+<div class="prev-overlay" id="prev-overlay" onclick="bgClose(event,'prev-overlay',closePreview)">
+  <div class="prev-actions">
+    <button class="pv-btn" onclick="downloadHTML()">↓ HTML 저장</button>
+    <button class="pv-btn" onclick="window.print()">🖨 인쇄 / PDF</button>
+    <button class="pv-btn sec" onclick="closePreview()">✕ 닫기</button>
+  </div>
+  <div class="prev-box" id="prev-box"></div>
+</div>
+
+<script>
+var API = 'https://api.anthropic.com/v1/messages';
+var NL = '\n';
+
+var state = { genre: '브랜드필름', overviewData: null, conceptData: null, boardData: null, info: null };
+var hist = [];
+try { hist = JSON.parse(localStorage.getItem('pplan_hist') || '[]'); } catch(e) {}
+
+// ── GENRE ──
+function selectGenre(el, g) {
+  document.querySelectorAll('#chips-genre .chip').forEach(function(c){ c.classList.remove('active'); });
+  el.classList.add('active');
+  state.genre = g;
+  updateBoardBtn();
+}
+function updateBoardBtn() {
+  var isSeries = state.genre === '유튜브시리즈';
+  document.getElementById('board-btn-text').textContent = isSeries ? '화별 진행가이드 생성' : '스토리보드 생성';
+  document.getElementById('board-btn-sub').textContent = isSeries ? 'STEP1 오프닝 → STEP2 본론 → STEP3 마무리/티저' : '씬별 장면묘사 · SOV 대사 · TEXT 자막';
+}
+
+// ── UTIL ──
+function v(id){ return document.getElementById(id).value.trim(); }
+function sb(id){ document.getElementById(id).style.display = 'block'; }
+function sh(id){ document.getElementById(id).style.display = 'none'; }
+
+function timer(elId, prefix) {
+  var s = 0;
+  return setInterval(function(){ s++; var el = document.getElementById(elId); if(el) el.textContent = prefix + ' ' + s + 's'; }, 1000);
+}
+
+function copyEl(id) {
+  navigator.clipboard.writeText(document.getElementById(id).innerText).then(function(){
+    document.querySelectorAll('.copy-btn').forEach(function(b){
+      if (b.getAttribute('onclick') && b.getAttribute('onclick').indexOf(id) > -1){
+        b.textContent = 'COPIED!';
+        setTimeout(function(){ b.textContent = 'COPY'; }, 2000);
+      }
+    });
+  });
+}
+
+async function callAPI(prompt, maxTok) {
+  var aKey = document.getElementById('anthropic-key').value.trim();
+  var res = await fetch(API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-api-key': aKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+    body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: maxTok, messages: [{ role: 'user', content: prompt }] })
+  });
+  if (!res.ok) { var e = await res.json().catch(function(){ return {}; }); throw new Error(e.error ? e.error.message : 'API 오류 ' + res.status); }
+  var d = await res.json();
+  return d.content.filter(function(b){ return b.type === 'text'; }).map(function(b){ return b.text; }).join('');
+}
+
+function parseJ(raw, isArr) {
+  var bt = '`';
+  var c = raw.split(bt+bt+bt+'json').join('').split(bt+bt+bt).join('').trim();
+  var s = c.indexOf(isArr ? '[' : '{'), e = c.lastIndexOf(isArr ? ']' : '}');
+  if (s === -1 || e === -1) throw new Error('JSON을 찾을 수 없습니다. 다시 시도해주세요.');
+  try { return JSON.parse(c.slice(s, e+1)); } catch(err) { throw new Error('JSON 파싱 오류. 다시 시도해주세요.'); }
+}
+
+// ── OPENAI FUNCTIONS ──
+async function analyzeImage(base64Image) {
+  var key = document.getElementById('openai-key').value.trim();
+  if (!key) return null;
+  var res = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + key
+    },
+    body: JSON.stringify({
+      model: 'gpt-5.4',
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'text', text: '이 이미지에 있는 인물 또는 제품/오브젝트를 영상 제작 콘티용으로 묘사해줘. 성별, 나이대, 체형, 헤어스타일, 의상, 분위기를 구체적으로 한 문장으로. 한국어로.' },
+          { type: 'image_url', image_url: { url: 'data:image/jpeg;base64,' + base64Image } }
+        ]
+      }],
+      max_tokens: 200
+    })
+  });
+  if (!res.ok) return null;
+  var d = await res.json();
+  return d.choices && d.choices[0] ? d.choices[0].message.content : null;
+}
+
+async function generateImage(prompt) {
+  var key = document.getElementById('openai-key').value.trim();
+  if (!key) return null;
+  var res = await fetch('https://api.openai.com/v1/images/generations', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + key
+    },
+    body: JSON.stringify({
+      model: 'gpt-image-1.5',
+      prompt: prompt,
+      n: 1,
+      size: '1536x1024'
+    })
+  });
+  if (!res.ok) return null;
+  var d = await res.json();
+  return d.data && d.data[0] ? d.data[0].url : null;
+}
+
+function handleSubjectUpload(inputId, btnEl) {
+  var fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.accept = 'image/*';
+  fileInput.onchange = async function() {
+    var file = fileInput.files[0];
+    if (!file) return;
+    btnEl.disabled = true;
+    btnEl.textContent = '분석 중...';
+    var reader = new FileReader();
+    reader.onload = async function() {
+      var base64 = reader.result.split(',')[1];
+      var desc = await analyzeImage(base64);
+      if (desc) {
+        document.getElementById(inputId).value = desc;
+      } else {
+        alert('이미지 분석 실패. OpenAI 키를 확인해주세요.');
+      }
+      btnEl.disabled = false;
+      btnEl.textContent = '📷';
+    };
+    reader.readAsDataURL(file);
+  };
+  fileInput.click();
+}
+
+// ── 사업성 분석 ──
+async function generateBizAnalysis() {
+  var aKey = document.getElementById('anthropic-key').value.trim();
+  if (!aKey) { alert('API 키를 먼저 입력해주세요'); return; }
+  var type = document.getElementById('inp-checklist-type').value;
+  var client = v('inp-client') || '(미입력)';
+  var duration = v('inp-duration') || '(미입력)';
+  var points = v('inp-points') || '(미입력)';
+  var btn = document.getElementById('biz-btn');
+  var resultDiv = document.getElementById('biz-result');
+  var cardsDiv = document.getElementById('biz-cards');
+  btn.disabled = true;
+  btn.textContent = '분석 중...';
+  resultDiv.style.display = 'none';
+
+  var prompt = [
+    '너는 영상 제작 사업 전문 컨설턴트야.',
+    '아래 프로젝트 정보를 바탕으로 사업성 분석 리포트를 작성해줘.',
+    '',
+    type + ' / ' + client + ' / ' + duration + ' / ' + points,
+    '',
+    '아래 5개 섹션을 정확히 이 형식으로만 작성. 마크다운 절대 사용 금지.',
+    '',
+    '[수익모델]',
+    '이 프로젝트에서 기대할 수 있는 수익화 경로를 구체적으로.',
+    '예: 제작비 수주 / PPL / 플랫폼 판매 / IP화 / 러닝개런티 등',
+    '',
+    '[예상일정]',
+    '프리프로덕션 / 촬영 / 후반작업 / 납품 단계별 예상 소요일.',
+    '1인 AI 파이프라인 기준과 일반 팀 기준 두 가지로.',
+    '',
+    '[제작비용]',
+    '인건비 / 장비 / 후반 / 기타 항목별 예상 비용 범위.',
+    'AI 툴 활용 시 절감 가능한 항목 표시.',
+    '',
+    '[리스크]',
+    '이 프로젝트에서 주의해야 할 리스크 3가지.',
+    '각 리스크별 대응 방안 포함.',
+    '',
+    '[한줄결론]',
+    '이 프로젝트의 사업성을 한 문장으로.'
+  ].join(NL);
+
+  try {
+    var raw = await callAPI(prompt, 1500);
+    renderBizResult(raw, cardsDiv);
+    resultDiv.style.display = 'block';
+  } catch(e) {
+    cardsDiv.innerHTML = '<div class="error-box">사업성 분석 오류: ' + e.message + '</div>';
+    resultDiv.style.display = 'block';
+  }
+  btn.disabled = false;
+  btn.textContent = '💰 사업성 분석';
+}
+
+function renderBizResult(raw, container) {
+  var sections = [
+    { key: '수익모델', color: 'var(--success)', border: 'rgba(62,207,112,.3)', bg: '#071a0e' },
+    { key: '예상일정', color: 'var(--blue)', border: 'rgba(91,156,246,.3)', bg: '#0d1625' },
+    { key: '제작비용', color: 'var(--trend)', border: 'rgba(240,160,48,.3)', bg: '#1a1200' },
+    { key: '리스크', color: 'var(--accent)', border: 'rgba(232,200,74,.35)', bg: '#16140a' },
+    { key: '한줄결론', color: '#fff', border: 'var(--border2)', bg: 'var(--surface3)' }
+  ];
+  var html = '';
+  sections.forEach(function(sec) {
+    var re = new RegExp('\\[' + sec.key + '\\]([\\s\\S]*?)(?=\\[|$)');
+    var m = raw.match(re);
+    var body = m ? m[1].trim() : '';
+    if (!body) return;
+    var isConclusion = sec.key === '한줄결론';
+    html += '<div style="background:' + sec.bg + ';border:1px solid ' + sec.border + ';border-radius:7px;padding:12px 14px;margin-bottom:6px'
+      + (isConclusion ? ';text-align:center' : '') + '">'
+      + '<div style="font-size:10px;color:' + sec.color + ';font-family:\'JetBrains Mono\',monospace;letter-spacing:1px;margin-bottom:6px;text-transform:uppercase">' + sec.key + '</div>'
+      + '<div style="font-size:12px;line-height:1.85;color:var(--text);white-space:pre-wrap'
+      + (isConclusion ? ';font-size:14px;font-weight:700;color:' + sec.color : '') + '">' + body + '</div></div>';
+  });
+  container.innerHTML = html || '<div style="color:var(--muted);font-size:12px">분석 결과를 파싱할 수 없습니다.</div>';
+}
+
+// ── STEP 00 체크리스트 ──
+async function generateChecklist() {
+  var type = document.getElementById('inp-checklist-type').value;
+  var btn = document.getElementById('checklist-btn');
+  var result = document.getElementById('checklist-result');
+  var textEl = document.getElementById('checklist-text');
+  btn.disabled = true;
+  btn.textContent = '생성 중...';
+  result.style.display = 'none';
+  var prompt = [
+    '너는 영상 제작 전문 PD야.',
+    type + ' 제작을 위한',
+    '클라이언트 미팅 전 반드시 확인해야 할 체크리스트를 만들어줘.',
+    '',
+    '형식: 카테고리별 구분, 항목마다 ✓ 기호.',
+    '카테고리: 콘텐츠 방향 / 타겟 및 메시지 / 제작 조건 / 레퍼런스 / 일정 및 예산',
+    '마크다운 없이 텍스트만.'
+  ].join(NL);
+  try {
+    var text = await callAPI(prompt, 1000);
+    textEl.textContent = text;
+    result.style.display = 'block';
+  } catch(e) {
+    textEl.textContent = '오류: ' + e.message;
+    result.style.display = 'block';
+  }
+  btn.disabled = false;
+  btn.textContent = '📋 체크리스트 생성';
+}
+
+function setStep(active) {
+  document.getElementById('step-bar').classList.add('vis');
+  for (var i = 1; i <= 4; i++) {
+    var dot = document.getElementById('sb' + i), lbl = document.getElementById('sl' + i);
+    dot.className = 'sb-dot'; lbl.className = 'sb-label';
+    if (i < active) { dot.classList.add('done'); lbl.classList.add('done'); }
+    else if (i === active) { dot.classList.add('active'); lbl.classList.add('active'); }
+  }
+}
+
+// ── RESET ──
+function resetAll() {
+  if (!confirm('새 문서를 시작할까요? 현재 내용이 초기화됩니다.')) return;
+  state = { genre: '브랜드필름', overviewData: null, conceptData: null, boardData: null, info: null };
+  ['inp-client','inp-project','inp-duration','inp-episodes','inp-points','inp-purpose','inp-request','inp-refurl','inp-note','inp-person1','inp-person2','inp-product','inp-bg'].forEach(function(id){ document.getElementById(id).value = ''; });
+  document.querySelectorAll('#chips-genre .chip').forEach(function(c, i){ c.classList.toggle('active', i === 0); });
+  state.genre = '브랜드필름';
+  sh('result-area'); sb('empty-state');
+  ['sec-summary','sec-overview','sec-concept','sec-board'].forEach(function(id){ sh(id); });
+  document.getElementById('step-bar').classList.remove('vis');
+  document.getElementById('export-btn').classList.remove('vis');
+  document.getElementById('reset-btn').classList.remove('vis');
+  document.getElementById('gen-btn').disabled = false;
+  document.getElementById('gen-btn').textContent = '⚡ 기획서 자동 생성';
+}
+
+// ── STEP 01 ──
+async function startGenerate() {
+  var client = v('inp-client'), project = v('inp-project'), points = v('inp-points');
+  if (!client || !project) { alert('클라이언트명과 프로젝트명을 입력해주세요.'); return; }
+  if (!points) { alert('제작 포인트를 입력해주세요.'); return; }
+
+  state.info = { client, project, genre: state.genre,
+    duration: v('inp-duration') || '미정', episodes: v('inp-episodes') || '1편',
+    points,
+    purpose: v('inp-purpose'),
+    request: v('inp-request'),
+    refurl: v('inp-refurl'),
+    note: v('inp-note'),
+    person1: v('inp-person1'),
+    person2: v('inp-person2'),
+    product: v('inp-product'),
+    bg: v('inp-bg') };
+
+  document.getElementById('gen-btn').disabled = true;
+  document.getElementById('gen-btn').textContent = '생성 중...';
+  sh('empty-state'); sb('result-area');
+  document.getElementById('export-btn').classList.add('vis');
+  document.getElementById('reset-btn').classList.add('vis');
+
+  renderSummary(); setStep(1);
+  await generateOverview();
+}
+
+function renderSummary() {
+  var p = state.info;
+  var gc = { '브랜드필름':'#e8c84a','광고':'#f0a030','유튜브시리즈':'#5b9cf6','기념영상':'#3ecf70' }[p.genre] || '#e8c84a';
+  document.getElementById('summary-container').innerHTML =
+    '<div class="doc-wrap"><div style="padding:14px 18px;display:flex;flex-wrap:wrap;gap:10px;align-items:center">'
+    + scard('CLIENT', p.client, '#fff', 'var(--border2)')
+    + scard('PROJECT', p.project, '#fff', 'var(--border2)', true)
+    + scard('GENRE', p.genre, gc, gc + '40')
+    + scard('LENGTH', p.duration + ' · ' + p.episodes, 'var(--muted)', 'var(--border2)')
+    + '</div></div>';
+  sb('sec-summary');
+}
+function scard(label, val, color, borderColor, flex) {
+  return '<div style="background:var(--surface2);border:1px solid ' + borderColor + ';border-radius:7px;padding:10px 16px' + (flex ? ';flex:1;min-width:180px' : '') + '">'
+    + '<div style="font-size:10px;color:var(--muted);font-family:JetBrains Mono,monospace;margin-bottom:3px">' + label + '</div>'
+    + '<div style="font-size:14px;font-weight:700;color:' + color + '">' + val + '</div></div>';
+}
+
+// ── STEP 02 ──
+async function generateOverview() {
+  var p = state.info;
+  sb('sec-overview');
+  sh('next-concept-btn');
+  document.getElementById('eval-bar').classList.remove('vis');
+  var con = document.getElementById('overview-container');
+  con.innerHTML = '<div class="loading-state"><div class="loader"></div><div class="loading-text" id="lt2">제안개요 작성 중... 0s</div></div>';
+  var t = timer('lt2', '제안개요 작성 중...');
+  document.getElementById('sec-overview').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  var prompt = ['너는 프로 영상 프로덕션 PD다. 아래 정보로 PPM 제안개요를 JSON으로 작성해줘.',
+    '클라이언트: ' + p.client, '프로젝트명: ' + p.project, '장르: ' + p.genre,
+    '영상 길이: ' + p.duration, '편수: ' + p.episodes, '제작 포인트: ' + p.points,
+    (p.purpose ? '콘텐츠 목적: ' + p.purpose : ''),
+    (p.request ? '클라이언트 요청: ' + p.request : ''),
+    (p.refurl ? '레퍼런스: ' + p.refurl : ''),
+    (p.note ? '특이사항: ' + p.note : ''),
+    '', '반드시 JSON만 출력. 코드블록 없이.',
+    '{"title":"영상 타이틀","client":"클라이언트명","format":"영상포맷설명","duration":"영상길이","episodes":"편수","production_points":["포인트1","포인트2","포인트3"],"director_intention":"감독 연출의도 3~4문장. 이 영상을 통해 전달할 것과 연출 철학.","eval":{"hook":true,"structure":true,"target":true,"tone":true,"story":true}}'
+  ].filter(Boolean).join(NL);
+
+  var best = null, bestScore = 0, attempts = 0;
+
+  async function attempt() {
+    attempts++;
+    try {
+      var raw = await callAPI(prompt, 1800);
+      var d = parseJ(raw, false);
+      var score = ['hook','structure','target','tone','story'].filter(function(k){ return d.eval && d.eval[k]; }).length;
+      if (score > bestScore || !best) { bestScore = score; best = d; }
+      if (score >= 4 || attempts >= 3) {
+        clearInterval(t);
+        state.overviewData = best;
+        renderOverview(best);
+        renderEval(best.eval || {});
+        document.getElementById('next-concept-btn').style.display = 'flex';
+        setStep(2);
+        document.getElementById('gen-btn').disabled = false;
+        document.getElementById('gen-btn').textContent = '⚡ 기획서 자동 생성';
+      } else { await attempt(); }
+    } catch(e) {
+      clearInterval(t);
+      con.innerHTML = '<div class="error-box">제안개요 오류: ' + e.message + '<br><br><button class="retry-btn" onclick="generateOverview()">다시 시도</button></div>';
+      document.getElementById('gen-btn').disabled = false;
+      document.getElementById('gen-btn').textContent = '⚡ 기획서 자동 생성';
+    }
+  }
+  await attempt();
+}
+
+function renderEval(ev) {
+  var labels = { hook:'훅/임팩트', structure:'문서구조', target:'타겟명확성', tone:'톤앤매너', story:'스토리라인' };
+  var score = 0, html = '';
+  Object.keys(labels).forEach(function(k){
+    var pass = ev[k] === true; if(pass) score++;
+    html += '<span class="eval-item ' + (pass ? 'eval-pass' : 'eval-warn') + '">' + (pass ? '✓ ' : '△ ') + labels[k] + '</span>';
+  });
+  document.getElementById('eval-items').innerHTML = html;
+  document.getElementById('eval-score').textContent = '자가평가: ' + score + '/5 · ' + (score >= 4 ? '기준 충족' : score >= 3 ? '재시도 후 최선안' : '재작성 완료');
+  document.getElementById('eval-bar').classList.add('vis');
+}
+
+function renderOverview(d) {
+  var pts = (d.production_points || []).map(function(p){ return '<div class="flow-point">' + p + '</div>'; }).join('');
+  document.getElementById('overview-container').innerHTML =
+    '<div class="doc-wrap">'
+    + '<div class="doc-header"><div class="doc-header-title">' + (d.title||'') + '</div>'
+    + '<div class="doc-header-sub">I. 제안개요 · ' + (d.client||'') + '</div></div>'
+    + '<table class="prop-table">'
+    + prow('CLIENT', d.client||'') + prow('FORMAT', d.format||'')
+    + prow('DURATION', d.duration||'') + prow('EPISODES', d.episodes||'')
+    + '<tr><td class="prop-key">제작포인트</td><td class="prop-val"><div class="flow-points">' + pts + '</div></td></tr>'
+    + '</table>'
+    + '<div style="border-top:1px solid var(--border)">'
+    + '<div class="concept-block"><div class="concept-label">DIRECTOR INTENTION</div>'
+    + '<div class="concept-body intent">' + (d.director_intention||'') + '</div></div></div></div>';
+}
+function prow(k, v) { return '<tr><td class="prop-key">' + k + '</td><td class="prop-val">' + v + '</td></tr>'; }
+
+// ── STEP 03 ──
+async function generateConcept() {
+  if (!state.overviewData) return;
+  var p = state.info, d = state.overviewData;
+  sb('sec-concept');
+  sh('next-board-btn');
+  sh('sec-board');
+  state.conceptData = null; state.boardData = null;
+  var con = document.getElementById('concept-container');
+  con.innerHTML = '<div class="loading-state"><div class="loader"></div><div class="loading-text" id="lt3">컨셉 & 메시지 작성 중... 0s</div></div>';
+  var t = timer('lt3', '컨셉 & 메시지 작성 중...');
+  document.getElementById('sec-concept').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  var prompt = ['너는 크리에이티브 디렉터다. 아래 정보로 영상 컨셉 및 메시지를 JSON으로 작성해.',
+    '클라이언트: ' + p.client, '프로젝트: ' + p.project, '장르: ' + p.genre,
+    '디렉터 인텐션: ' + (d.director_intention||''), '제작 포인트: ' + p.points,
+    (p.purpose ? '콘텐츠 목적: ' + p.purpose : ''),
+    (p.request ? '클라이언트 요청: ' + p.request : ''),
+    (p.refurl ? '레퍼런스: ' + p.refurl : ''),
+    (p.note ? '특이사항: ' + p.note : ''),
+    '', 'JSON만 출력. 코드블록 없이.',
+    '{"planning_intent":"기획의도 3~4문장.","tone_manner":["키워드1","키워드2","키워드3","키워드4","키워드5"],"tone_description":"톤앤매너 방향 2~3문장.","creative_concept":"크리에이티브 컨셉 제목과 방향 2~3문장.","key_message":"핵심 메시지 1문장."}'
+  ].filter(Boolean).join(NL);
+
+  try {
+    var raw = await callAPI(prompt, 2000);
+    clearInterval(t);
+    state.conceptData = parseJ(raw, false);
+    renderConcept(state.conceptData);
+    updateBoardBtn();
+    document.getElementById('next-board-btn').style.display = 'flex';
+    setStep(3);
+  } catch(e) {
+    clearInterval(t);
+    con.innerHTML = '<div class="error-box">컨셉 오류: ' + e.message + '<br><br><button class="retry-btn" onclick="generateConcept()">다시 시도</button></div>';
+  }
+}
+
+function renderConcept(d) {
+  var tags = (d.tone_manner||[]).map(function(t){ return '<span class="tone-tag">' + t + '</span>'; }).join('');
+  document.getElementById('concept-container').innerHTML =
+    '<div class="doc-wrap">'
+    + '<div class="concept-block"><div class="concept-label">기획의도 · PLANNING INTENT</div><div class="concept-body">' + (d.planning_intent||'') + '</div></div>'
+    + '<div class="concept-block"><div class="concept-label">톤앤매너 · TONE & MANNER</div>'
+    + '<div class="tone-tags">' + tags + '</div>'
+    + '<div class="concept-body" style="margin-top:10px;color:var(--muted)">' + (d.tone_description||'') + '</div></div>'
+    + '<div class="concept-block"><div class="concept-label">크리에이티브 컨셉</div><div class="concept-body">' + (d.creative_concept||'') + '</div></div>'
+    + '<div class="concept-block"><div class="concept-label">키메시지 · KEY MESSAGE</div><div class="concept-body key">' + (d.key_message||'') + '</div></div>'
+    + '</div>';
+}
+
+// ── STEP 04 ── (분할 생성 — 1000토큰 제한 대응)
+async function generateBoard() {
+  if (!state.conceptData) return;
+  var p = state.info, isSeries = p.genre === '유튜브시리즈';
+  sb('sec-board');
+  document.getElementById('board-title').textContent = isSeries ? '화별 진행가이드' : '씬별 스토리보드';
+  state.boardData = null;
+  var con = document.getElementById('board-container');
+  document.getElementById('sec-board').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  try {
+    if (isSeries) { await generateEpisodesChunked(p, con); }
+    else { await generateScenesChunked(p, con); }
+    setStep(4);
+    saveHist();
+  } catch(e) {
+    con.innerHTML = '<div class="error-box">스토리보드 오류: ' + e.message + '<br><br><button class="retry-btn" onclick="generateBoard()">다시 시도</button></div>';
+  }
+}
+
+// 영상 길이 → 적정 씬 개수 추정
+function estimateSceneCount(duration) {
+  var dur = (duration || '').toLowerCase();
+  var totalSec = 0;
+  var m = dur.match(/(\d+)\s*분/); if (m) totalSec += parseInt(m[1]) * 60;
+  var s = dur.match(/(\d+)\s*초/); if (s) totalSec += parseInt(s[1]);
+  if (totalSec === 0) totalSec = 120;
+  return Math.max(3, Math.min(10, Math.round(totalSec / 18)));
+}
+
+// 편수 문자열 → 숫자
+function getEpisodeCount(episodes) {
+  var ep = (episodes || '1').match(/\d+/);
+  return ep ? Math.min(parseInt(ep[0]), 8) : 3;
+}
+
+// 진행 표시바
+function showBoardProgress(con, msg, current, total) {
+  var pct = Math.round((current - 1) / total * 100);
+  con.innerHTML = '<div class="loading-state">'
+    + '<div class="loader"></div>'
+    + '<div class="loading-text">' + msg + ' &nbsp;' + current + ' / ' + total + '</div>'
+    + '<div style="width:220px;height:3px;background:var(--border2);border-radius:2px;margin-top:14px">'
+    + '<div style="height:100%;background:var(--accent);border-radius:2px;width:' + pct + '%;transition:width .4s"></div>'
+    + '</div></div>';
+}
+
+// ── 피사체 컨텍스트 ──
+function getSubjectContext(p) {
+  var lines = [];
+  if (p.person1) lines.push('인물1: ' + p.person1);
+  if (p.person2) lines.push('인물2: ' + p.person2);
+  if (p.product) lines.push('제품/오브젝트: ' + p.product);
+  if (p.bg) lines.push('배경/공간: ' + p.bg);
+  if (!lines.length) return '';
+  return '=== 피사체 설정 ===\n' + lines.join('\n') + '\n모든 씬에서 위 피사체 설정을 일관되게 유지해줘.\n=================';
+}
+
+// 씬 분할 생성 (2씬 배치)
+async function generateScenesChunked(p, con) {
+  var total = estimateSceneCount(p.duration);
+  var allScenes = [];
+  var batchSize = 2;
+
+  for (var i = 0; i < total; i += batchSize) {
+    var startNum = i + 1;
+    var endNum = Math.min(i + batchSize, total);
+    showBoardProgress(con, '씬 생성 중...', startNum, total);
+
+    var prevCtx = allScenes.length
+      ? '앞선 씬 (연속성 유지): ' + allScenes.map(function(s){ return s.num + '(' + s.location + ' ' + s.time + ')'; }).join(', ')
+      : '';
+    var batchCount = endNum - startNum + 1;
+    var numStr = function(n){ return 'S' + (n < 10 ? '0' : '') + n; };
+
+    var prompt = [
+      '너는 영상 PD다. 씬 ' + startNum + '~' + endNum + '번 (전체 ' + total + '씬) JSON 배열만 작성해.',
+      '클라이언트: ' + p.client + ' | 프로젝트: ' + p.project,
+      '장르: ' + p.genre + ' | 영상 길이: ' + p.duration,
+      '톤앤매너: ' + (state.conceptData.tone_manner||[]).join(', '),
+      '키메시지: ' + (state.conceptData.key_message||''),
+      '디렉터 인텐션: ' + (state.overviewData ? state.overviewData.director_intention||'' : ''),
+      (p.purpose ? '콘텐츠 목적: ' + p.purpose : ''),
+      (p.request ? '클라이언트 요청: ' + p.request : ''),
+      (p.refurl ? '레퍼런스: ' + p.refurl : ''),
+      (p.note ? '특이사항: ' + p.note : ''),
+      getSubjectContext(p),
+      prevCtx,
+      '',
+      '정확히 ' + batchCount + '개 씬만 JSON 배열 출력. 코드블록 없이.',
+      '[{"num":"' + numStr(startNum) + '","location":"장소","time":"0:00~0:15","description":"장면묘사 2~3문장","sov":"나레이션(없으면 빈문자열)","caption":["자막"]}]'
+    ].filter(Boolean).join(NL);
+
+    var raw = await callAPI(prompt, 1000);
+    var batch = parseJ(raw, true);
+    allScenes = allScenes.concat(Array.isArray(batch) ? batch : [batch]);
+  }
+
+  state.boardData = { scenes: allScenes };
+  renderStoryboard(state.boardData);
+}
+
+// 에피소드 분할 생성 (1화씩)
+async function generateEpisodesChunked(p, con) {
+  var total = getEpisodeCount(p.episodes);
+  var allEps = [];
+
+  for (var i = 0; i < total; i++) {
+    var epNum = i + 1;
+    var epStr = 'EP.' + (epNum < 10 ? '0' : '') + epNum;
+    showBoardProgress(con, '화별 가이드 생성 중...', epNum, total);
+
+    var prompt = [
+      '너는 유튜브 PD다. ' + epStr + ' (전체 ' + total + '화) 진행가이드 JSON 1개만 작성해.',
+      '클라이언트: ' + p.client + ' | 프로젝트: ' + p.project,
+      '영상 길이: ' + p.duration,
+      '키메시지: ' + (state.conceptData.key_message||''),
+      '기획의도: ' + (state.conceptData.planning_intent||''),
+      '제작 포인트: ' + p.points,
+      (p.purpose ? '콘텐츠 목적: ' + p.purpose : ''),
+      (p.request ? '클라이언트 요청: ' + p.request : ''),
+      (p.refurl ? '레퍼런스: ' + p.refurl : ''),
+      (p.note ? '특이사항: ' + p.note : ''),
+      '',
+      'JSON 1개만 출력. 코드블록 없이.',
+      '{"ep_num":"' + epStr + '","ep_title":"화 제목","opening":{"label":"STEP1 오프닝","desc":"훅 방식","points":["포인트1","포인트2"]},"main":{"label":"STEP2 본론","desc":"본 내용","points":["포인트1","포인트2","포인트3"]},"closing":{"label":"STEP3 마무리/티저","desc":"엔딩","points":["포인트1","포인트2"]}}'
+    ].filter(Boolean).join(NL);
+
+    var raw = await callAPI(prompt, 1000);
+    allEps.push(parseJ(raw, false));
+  }
+
+  state.boardData = { episodes: allEps };
+  renderGuide(state.boardData);
+}
+
+function renderStoryboard(d) {
+  var scenes = d.scenes || [];
+  var hasKey = !!document.getElementById('openai-key').value.trim();
+  var html = '<div class="sb-wrap">';
+  scenes.forEach(function(sc, idx){
+    var caps = (sc.caption||[]).map(function(c){ return '<span class="caption-chip">' + c + '</span>'; }).join('');
+    var imgBtnHtml = hasKey
+      ? '<button onclick="genSceneImage(' + idx + ')" style="background:var(--surface2);border:1px solid var(--border2);color:var(--muted);font-size:11px;padding:5px 12px;border-radius:5px;cursor:pointer;font-family:\'JetBrains Mono\',monospace;transition:all .2s" onmouseover="this.style.borderColor=\'var(--blue)\';this.style.color=\'var(--blue)\'" onmouseout="this.style.borderColor=\'var(--border2)\';this.style.color=\'var(--muted)\'">🖼 이미지 생성</button>'
+      : '<span style="font-size:11px;color:var(--muted2);font-family:\'JetBrains Mono\',monospace">🖼 이미지 생성 — OpenAI 키 필요</span>';
+    html += '<div class="sb-scene">'
+      + '<div class="sb-scene-top"><span class="sb-num">' + (sc.num||'') + '</span>'
+      + '<span class="sb-location">' + (sc.location||'') + '</span>'
+      + '<span class="sb-time">' + (sc.time||'') + '</span></div>'
+      + '<div class="sb-grid">'
+      + '<div class="sb-cell"><div class="sb-cell-label">SCENE DESCRIPTION</div><div class="sb-cell-body">' + (sc.description||'') + '</div></div>'
+      + '<div class="sb-cell"><div class="sb-cell-label">SOV / NARRATION</div><div class="sb-cell-body vo">' + (sc.sov||'—') + '</div></div>'
+      + '<div class="sb-cell" style="grid-column:1/-1"><div class="sb-cell-label">TEXT / 자막</div><div class="sb-cell-body">' + (caps||'<span style="color:var(--muted)">—</span>') + '</div></div>'
+      + '</div>'
+      + '<div style="padding:10px;border-top:1px solid var(--border)">'
+      + '<div id="scene-img-' + idx + '">' + imgBtnHtml + '</div>'
+      + '</div>'
+      + '</div>';
+  });
+  document.getElementById('board-container').innerHTML = html + '</div>';
+}
+
+async function genSceneImage(idx) {
+  var sc = state.boardData && state.boardData.scenes && state.boardData.scenes[idx];
+  if (!sc) return;
+  var el = document.getElementById('scene-img-' + idx);
+  el.innerHTML = '<div style="display:flex;align-items:center;gap:8px;padding:4px 0"><div class="loader" style="width:16px;height:16px;border-width:2px"></div><span style="font-size:11px;color:var(--muted);font-family:\'JetBrains Mono\',monospace">이미지 생성 중...</span></div>';
+  var subCtx = getSubjectContext(state.info);
+  var imgPrompt = (subCtx ? subCtx + '\n' : '') + (sc.description||'') + ', cinematic, 16:9';
+  var url = await generateImage(imgPrompt);
+  if (url) {
+    el.innerHTML = '<img src="' + url + '" style="width:100%;border-radius:6px;display:block;margin-top:4px">';
+  } else {
+    el.innerHTML = '<button onclick="genSceneImage(' + idx + ')" style="background:#180a0a;border:1px solid #4a1515;color:#ff9090;font-size:11px;padding:5px 12px;border-radius:5px;cursor:pointer;font-family:\'JetBrains Mono\',monospace">생성 실패 — 다시 시도</button>';
+  }
+}
+
+function renderGuide(d) {
+  var eps = d.episodes || [];
+  var cls = { opening:'fn-s1', main:'fn-s2', closing:'fn-s3' };
+  var html = '<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden">';
+  eps.forEach(function(ep){
+    html += '<div class="guide-ep"><div class="ep-badge">' + (ep.ep_num||'') + '</div>'
+      + '<div class="ep-title">' + (ep.ep_title||'') + '</div><div class="step-flow">';
+    ['opening','main','closing'].forEach(function(key){
+      var s = ep[key]; if (!s) return;
+      var pts = (s.points||[]).map(function(pt){ return '<div class="flow-point">' + pt + '</div>'; }).join('');
+      html += '<div class="flow-step"><div class="flow-step-header">'
+        + '<span class="flow-num ' + cls[key] + '">' + s.label + '</span></div>'
+        + '<div class="flow-body">' + (s.desc||'') + '</div>'
+        + '<div class="flow-points" style="margin-top:8px">' + pts + '</div></div>';
+    });
+    html += '</div></div>';
+  });
+  document.getElementById('board-container').innerHTML = html + '</div>';
+}
+
+// ── HISTORY ──
+function saveHist() {
+  if (!state.info) return;
+  hist.unshift({ id: Date.now(), client: state.info.client, project: state.info.project, genre: state.info.genre,
+    date: new Date().toLocaleDateString('ko-KR'), state: JSON.parse(JSON.stringify(state)) });
+  if (hist.length > 3) hist = hist.slice(0, 3);
+  localStorage.setItem('pplan_hist', JSON.stringify(hist));
+  updateHC();
+}
+function updateHC() { document.getElementById('hist-cnt').textContent = hist.length; }
+
+function openHistory() {
+  var list = document.getElementById('hist-list');
+  if (!hist.length) {
+    list.innerHTML = '<div class="hp-empty">저장된 히스토리가 없습니다.<br>STEP 04까지 완료하면<br>자동 저장됩니다.</div>';
+  } else {
+    list.innerHTML = '';
+    hist.forEach(function(h, idx){
+      var el = document.createElement('div'); el.className = 'hist-item';
+      el.innerHTML = '<div style="display:flex;align-items:flex-start;gap:8px">'
+        + '<div style="flex:1"><div class="hi-title">' + h.project + '</div>'
+        + '<div class="hi-meta"><span class="hi-genre">' + h.genre + '</span><span>' + h.client + '</span><span>' + h.date + '</span></div></div>'
+        + '<button class="hi-del" onclick="delHist(' + idx + ');event.stopPropagation()">삭제</button></div>';
+      el.onclick = function(){ loadHist(h); };
+      list.appendChild(el);
+    });
+  }
+  document.getElementById('hist-overlay').classList.add('vis');
+}
+function delHist(idx) {
+  hist.splice(idx, 1);
+  localStorage.setItem('pplan_hist', JSON.stringify(hist));
+  updateHC(); openHistory();
+}
+function closeHistory() { document.getElementById('hist-overlay').classList.remove('vis'); }
+
+function loadHist(h) {
+  state = JSON.parse(JSON.stringify(h.state));
+  var p = state.info; if (!p) return;
+  document.getElementById('inp-client').value = p.client||'';
+  document.getElementById('inp-project').value = p.project||'';
+  document.getElementById('inp-duration').value = p.duration||'';
+  document.getElementById('inp-episodes').value = p.episodes||'';
+  document.getElementById('inp-points').value = p.points||'';
+  document.getElementById('inp-purpose').value = p.purpose||'';
+  document.getElementById('inp-request').value = p.request||'';
+  document.getElementById('inp-refurl').value = p.refurl||'';
+  document.getElementById('inp-note').value = p.note||'';
+  document.querySelectorAll('#chips-genre .chip').forEach(function(c){
+    c.classList.toggle('active', c.textContent.replace(' (CF)','') === p.genre || c.textContent === p.genre);
+  });
+  sh('empty-state'); sb('result-area');
+  document.getElementById('export-btn').classList.add('vis');
+  document.getElementById('reset-btn').classList.add('vis');
+  ['sec-summary','sec-overview','sec-concept','sec-board'].forEach(function(id){ sh(id); });
+  renderSummary();
+  if (state.overviewData) { sb('sec-overview'); renderOverview(state.overviewData); renderEval(state.overviewData.eval||{}); document.getElementById('next-concept-btn').style.display='flex'; }
+  if (state.conceptData) { sb('sec-concept'); renderConcept(state.conceptData); updateBoardBtn(); document.getElementById('next-board-btn').style.display='flex'; }
+  if (state.boardData) {
+    sb('sec-board');
+    document.getElementById('board-title').textContent = (p.genre === '유튜브시리즈') ? '화별 진행가이드' : '씬별 스토리보드';
+    if (p.genre === '유튜브시리즈') renderGuide(state.boardData);
+    else renderStoryboard(state.boardData);
+    setStep(4);
+  } else { setStep(state.conceptData ? 3 : (state.overviewData ? 2 : 1)); }
+  closeHistory();
+}
+
+function bgClose(ev, id, fn) { if (ev.target === document.getElementById(id)) fn(); }
+
+// ── EXPORT ──
+function openExport() {
+  document.getElementById('prev-box').innerHTML = buildPrint();
+  document.getElementById('prev-overlay').classList.add('vis');
+}
+function closePreview() { document.getElementById('prev-overlay').classList.remove('vis'); }
+
+function buildPrint() {
+  var p = state.info; if (!p) return '<div>데이터 없음</div>';
+  var date = new Date().toLocaleDateString('ko-KR');
+  var year = new Date().getFullYear();
+  var html = '<div class="print-doc">';
+
+  // ── 표지 (SNP PPM 다크 스타일) ──
+  html += '<div class="print-cover">'
+    + '<div class="print-cover-snp">SNPCOMPANY</div>'
+    + '<div>'
+    + '<div class="print-cover-cat">영상 기획 제안서 &nbsp;·&nbsp; ' + p.genre + '</div>'
+    + '<div class="print-cover-title">' + p.project + '</div>'
+    + '<div class="print-cover-sub">CLIENT &nbsp;/&nbsp; ' + p.client
+    + (p.duration && p.duration !== '미정' ? ' &nbsp;&nbsp;·&nbsp;&nbsp; ' + p.duration : '')
+    + (p.episodes && p.episodes !== '1편' ? ' &nbsp;·&nbsp; ' + p.episodes : '')
+    + '</div>'
+    + '</div>'
+    + '<div class="print-cover-copy">©' + year + ' SNP Company. All Right Reserved.</div>'
+    + '<div class="print-cover-datestr">' + date + '</div>'
+    + '</div>';
+
+  // ── I. 제안개요 ──
+  if (state.overviewData) {
+    var d = state.overviewData;
+    var pts = (d.production_points||[]).map(function(pt){ return '<div class="print-ep-pt">' + pt + '</div>'; }).join('');
+    html += '<div class="print-page">'
+      + '<div class="print-pg-hd">'
+      + '<div><div class="print-pg-section">I. 제안개요</div><div class="print-pg-title">01 &nbsp;|&nbsp; 제안개요</div></div>'
+      + '<div class="print-pg-snp">SNPCOMPANY</div></div>'
+      + '<table class="print-table">'
+      + prow('타이틀', '<strong>' + (d.title||'') + '</strong>')
+      + prow('클라이언트', d.client||'')
+      + prow('영상 포맷', d.format||'')
+      + prow('영상 길이', d.duration||'')
+      + prow('편수', d.episodes||'')
+      + '<tr><td class="print-lk">제작 포인트</td><td class="print-lv" style="padding-top:12px;padding-bottom:12px">' + pts + '</td></tr>'
+      + '</table>'
+      + '<div class="print-intent-box">'
+      + '<div class="print-intent-lbl">Director Intention</div>'
+      + '<div class="print-intent-body">' + (d.director_intention||'') + '</div>'
+      + '</div>'
+      + '<div class="print-pg-num">2</div></div>';
+  }
+
+  // ── II. 컨셉/메시지 ──
+  if (state.conceptData) {
+    var cd = state.conceptData;
+    var tones = (cd.tone_manner||[]).map(function(t){
+      return '<span style="display:inline-block;background:#f0f0f0;border-radius:2px;padding:2px 9px;font-size:11px;margin:2px 3px 2px 0;color:#444">' + t + '</span>';
+    }).join('');
+    html += '<div class="print-page">'
+      + '<div class="print-pg-hd">'
+      + '<div><div class="print-pg-section">II. 컨셉 및 메시지</div><div class="print-pg-title">01 &nbsp;|&nbsp; 기획의도 및 컨셉</div></div>'
+      + '<div class="print-pg-snp">SNPCOMPANY</div></div>'
+      + '<table class="print-table">'
+      + prow('기획의도', cd.planning_intent||'')
+      + '<tr><td class="print-lk">톤앤매너</td><td class="print-lv" style="padding-top:9px;padding-bottom:9px">' + tones + '</td></tr>'
+      + prow('크리에이티브 컨셉', cd.creative_concept||'')
+      + '<tr><td class="print-lk">키메시지</td><td class="print-lv" style="font-size:15px;font-weight:700;color:#111">' + (cd.key_message||'') + '</td></tr>'
+      + '</table>'
+      + '<div class="print-pg-num">3</div></div>';
+  }
+
+  // ── III. 스토리보드 / 진행가이드 ──
+  if (state.boardData) {
+    var isSeries = p.genre === '유튜브시리즈';
+    html += '<div class="print-page">'
+      + '<div class="print-pg-hd">'
+      + '<div><div class="print-pg-section">III. ' + (isSeries ? '화별 진행가이드' : '씬별 스토리보드') + '</div>'
+      + '<div class="print-pg-title">01 &nbsp;|&nbsp; ' + (isSeries ? '화별 구성' : '씬별 스토리보드') + '</div></div>'
+      + '<div class="print-pg-snp">SNPCOMPANY</div></div>';
+
+    if (isSeries) {
+      (state.boardData.episodes||[]).forEach(function(ep){
+        html += '<div class="print-ep-block">'
+          + '<div class="print-ep-num">' + (ep.ep_num||'') + '</div>'
+          + '<div class="print-ep-title">' + (ep.ep_title||'') + '</div>';
+        ['opening','main','closing'].forEach(function(key){
+          var s = ep[key]; if (!s) return;
+          var pts = (s.points||[]).map(function(pt){ return '<div class="print-ep-pt">' + pt + '</div>'; }).join('');
+          html += '<div class="print-ep-step">'
+            + '<div class="print-ep-step-lbl">' + (s.label||key) + '</div>'
+            + '<div><div class="print-ep-step-body">' + (s.desc||'') + '</div>'
+            + (pts ? '<div style="margin-top:4px">' + pts + '</div>' : '')
+            + '</div></div>';
+        });
+        html += '</div>';
+      });
+    } else {
+      (state.boardData.scenes||[]).forEach(function(sc, idx){
+        var caps = (sc.caption||[]).join(' / ');
+        html += '<div class="print-scene-block">'
+          + '<div class="print-scene-idx">#' + (idx+1) + (sc.time ? '&nbsp;&nbsp;&nbsp;' + sc.time : '') + '</div>'
+          + '<div class="print-scene-loc">' + (sc.location||'') + '</div>'
+          + '<div class="print-scene-desc">' + (sc.description||'') + '</div>'
+          + (sc.sov ? '<div class="print-scene-na">NA / ' + sc.sov + '</div>' : '')
+          + (caps ? '<div class="print-scene-cap">자막 ) ' + caps + '</div>' : '')
+          + '</div>';
+      });
+    }
+    html += '<div class="print-pg-num">4</div></div>';
+  }
+
+  html += '<div style="padding:12px 52px"><div class="print-footer">'
+    + '<span>PPLAN — SNP Company 영상 기획서 자동화 v1.0</span><span>' + date + '</span>'
+    + '</div></div></div>';
+  return html;
+}
+function pr(k, v) { return '<tr><td class="print-lk">' + k + '</td><td class="print-lv">' + v + '</td></tr>'; }
+
+function downloadHTML() {
+  var p = state.info;
+  var date = new Date().toLocaleDateString('ko-KR').replace(/\. /g,'').replace(/\.$/,'');
+  var fname = (p ? p.project.replace(/[^\uAC00-\uD7A3\w\s]/g,'_').replace(/\s+/g,'_') : 'pplan') + '_' + date + '.html';
+  var content = '<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + (p ? p.project : 'PPLAN') + '</title>'
+    + '<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">'
+    + '<style>'
+    + 'body{font-family:"Noto Sans KR",sans-serif;background:#fff;margin:0;padding:0;color:#111}'
+    + '.print-doc{font-family:"Noto Sans KR",sans-serif;color:#111;max-width:900px;margin:0 auto}'
+    + '.print-cover{background:#1c1c1e;color:#fff;padding:56px 60px 48px;min-height:460px;position:relative;display:flex;flex-direction:column;justify-content:flex-end}'
+    + '.print-cover-snp{font-family:"Bebas Neue",sans-serif;font-size:12px;letter-spacing:4px;color:rgba(255,255,255,.35);position:absolute;top:32px;right:48px}'
+    + '.print-cover-cat{font-size:10px;color:rgba(255,255,255,.35);letter-spacing:2.5px;margin-bottom:16px;font-family:"JetBrains Mono",monospace;text-transform:uppercase}'
+    + '.print-cover-title{font-size:40px;font-weight:700;line-height:1.2;margin-bottom:22px;letter-spacing:-.5px}'
+    + '.print-cover-sub{font-size:11px;color:rgba(255,255,255,.4);font-family:"JetBrains Mono",monospace;letter-spacing:1.5px}'
+    + '.print-cover-copy{font-size:10px;color:rgba(255,255,255,.22);font-family:"JetBrains Mono",monospace;position:absolute;bottom:28px;left:60px}'
+    + '.print-cover-datestr{font-size:10px;color:rgba(255,255,255,.22);font-family:"JetBrains Mono",monospace;position:absolute;bottom:28px;right:60px}'
+    + '.print-page{background:#fff;padding:38px 52px 44px;position:relative;border-bottom:1px solid #ebebeb;page-break-after:always}'
+    + '.print-pg-hd{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px}'
+    + '.print-pg-section{font-size:9px;color:#bbb;letter-spacing:2px;font-family:"JetBrains Mono",monospace;text-transform:uppercase;margin-bottom:5px}'
+    + '.print-pg-title{font-size:21px;font-weight:700;color:#111;line-height:1.2}'
+    + '.print-pg-snp{font-family:"Bebas Neue",sans-serif;font-size:11px;letter-spacing:3px;color:#ccc;padding-top:2px}'
+    + '.print-table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:0}'
+    + '.print-table tr:first-child td{border-top:1px solid #222}'
+    + '.print-table td{padding:11px 14px;border-bottom:1px solid #e8e8e8;vertical-align:top;line-height:1.7}'
+    + '.print-lk{font-size:12px;font-weight:700;color:#111;width:120px;white-space:nowrap;vertical-align:middle}'
+    + '.print-lv{color:#444}'
+    + '.print-intent-box{margin-top:18px;padding:16px 20px 16px 22px;border-left:3px solid #111;background:#fafafa}'
+    + '.print-intent-lbl{font-size:9px;color:#aaa;letter-spacing:2px;font-family:"JetBrains Mono",monospace;text-transform:uppercase;margin-bottom:8px}'
+    + '.print-intent-body{font-size:13px;line-height:2.1;font-style:italic;color:#333}'
+    + '.print-scene-block{padding:18px 0;border-bottom:1px solid #eee;page-break-inside:avoid}'
+    + '.print-scene-block:last-child{border-bottom:none}'
+    + '.print-scene-idx{font-family:"JetBrains Mono",monospace;font-size:10px;color:#bbb;letter-spacing:1px;margin-bottom:4px}'
+    + '.print-scene-loc{font-size:14px;font-weight:700;color:#111;margin-bottom:6px;line-height:1.5}'
+    + '.print-scene-desc{font-size:13px;color:#333;line-height:1.9;margin-bottom:8px}'
+    + '.print-scene-na{font-size:13px;color:#555;font-style:italic;line-height:1.8;padding-left:14px;border-left:2px solid #ddd;margin-bottom:5px}'
+    + '.print-scene-cap{font-size:12px;color:#999;padding-left:14px;line-height:1.7}'
+    + '.print-ep-block{padding:18px 0;border-bottom:1px solid #eee;page-break-inside:avoid}'
+    + '.print-ep-block:last-child{border-bottom:none}'
+    + '.print-ep-num{font-family:"JetBrains Mono",monospace;font-size:9px;color:#aaa;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px}'
+    + '.print-ep-title{font-size:16px;font-weight:700;color:#111;margin-bottom:14px}'
+    + '.print-ep-step{display:flex;gap:14px;margin-bottom:8px}'
+    + '.print-ep-step-lbl{font-size:11px;font-weight:700;color:#111;white-space:nowrap;min-width:86px;padding-top:1px}'
+    + '.print-ep-step-body{font-size:12px;color:#555;line-height:1.85}'
+    + '.print-ep-pt{font-size:11px;color:#444;padding-left:13px;line-height:1.85;position:relative}'
+    + '.print-ep-pt::before{content:"·";position:absolute;left:3px;color:#bbb}'
+    + '.print-pg-num{text-align:right;font-size:10px;color:#ccc;font-family:"JetBrains Mono",monospace;margin-top:28px}'
+    + '.print-footer{border-top:1px solid #eee;padding-top:11px;font-size:9px;color:#ccc;font-family:"JetBrains Mono",monospace;display:flex;justify-content:space-between;margin-top:32px}'
+    + '</style></head><body>' + buildPrint() + '</body></html>';
+  var blob = new Blob([content], { type: 'text/html;charset=utf-8' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a'); a.href = url; a.download = fname;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+// INIT
+updateHC();
+updateBoardBtn();
+(function(){
+  var ak = localStorage.getItem('anthropic_key'); if (ak) document.getElementById('anthropic-key').value = ak;
+  var ok = localStorage.getItem('openai_key'); if (ok) document.getElementById('openai-key').value = ok;
+})();
+</script>
+</body>
+</html>
