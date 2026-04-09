@@ -284,7 +284,10 @@ textarea{resize:vertical;min-height:72px;line-height:1.7}
       <div id="checklist-text" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:12px;font-size:12px;line-height:1.9;white-space:pre-wrap;max-height:260px;overflow-y:auto"></div>
       <div style="margin-top:8px;font-size:11px;color:var(--success);font-family:'JetBrains Mono',monospace">✓ 미팅 완료 — STEP 01 입력 시작</div>
     </div>
-    <button id="biz-btn" onclick="generateBizAnalysis()" style="background:var(--surface2);border:1px solid var(--trend);color:var(--trend);width:100%;padding:8px;border-radius:6px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;font-size:13px;transition:all .2s;margin-top:8px">💰 사업성 분석</button>
+    <div style="display:flex;gap:6px;margin-top:8px">
+      <button id="biz-btn" onclick="generateBizAnalysis()" style="background:var(--surface2);border:1px solid var(--trend);color:var(--trend);flex:1;padding:8px;border-radius:6px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;font-size:13px;transition:all .2s">💰 사업성 분석</button>
+      <button onclick="linkToYPLAN()" style="background:var(--surface2);border:1px solid var(--success);color:var(--success);flex:1;padding:8px;border-radius:6px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;font-size:13px;transition:all .2s">🔗 YPLAN으로 연동</button>
+    </div>
     <div id="biz-result" style="display:none;margin-top:10px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
         <span style="font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;letter-spacing:1px">사업성 분석</span>
@@ -603,6 +606,35 @@ function handleSubjectUpload(inputId, btnEl) {
   fileInput.click();
 }
 
+// ── YPLAN 연동 ──
+function saveToPPLANStorage() {
+  var data = {
+    project:   v('inp-project'),
+    client:    v('inp-client'),
+    duration:  v('inp-duration'),
+    points:    v('inp-purpose') || v('inp-points') || '',
+    ref:       v('inp-refurl') || '',
+    note:      v('inp-note') || '',
+    person1:   v('inp-person1') || '',
+    person2:   v('inp-person2') || '',
+    product:   v('inp-product') || '',
+    bg:        v('inp-bg') || '',
+    genre:     document.querySelector('#chips-genre .chip.active')
+               ? document.querySelector('#chips-genre .chip.active').textContent : '',
+    savedAt:   new Date().toISOString()
+  };
+  localStorage.setItem('pplan_current_project', JSON.stringify(data));
+  return data;
+}
+
+function linkToYPLAN() {
+  saveToPPLANStorage();
+  alert('YPLAN에 프로젝트 데이터를 저장했어요.\nYPLAN을 열면 자동으로 연결됩니다.');
+  if (confirm('지금 YPLAN으로 이동할까요?')) {
+    window.open('../youtube_planner_v7.html', '_blank');
+  }
+}
+
 // ── 사업성 분석 ──
 async function generateBizAnalysis() {
   var aKey = document.getElementById('anthropic-key').value.trim();
@@ -822,6 +854,7 @@ async function generateOverview() {
         renderEval(best.eval || {});
         document.getElementById('next-concept-btn').style.display = 'flex';
         setStep(2);
+        saveToPPLANStorage();
         document.getElementById('gen-btn').disabled = false;
         document.getElementById('gen-btn').textContent = '⚡ 기획서 자동 생성';
       } else { await attempt(); }
