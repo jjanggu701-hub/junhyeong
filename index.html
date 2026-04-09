@@ -317,16 +317,16 @@ textarea{resize:vertical;min-height:70px;line-height:1.6}
 .profile-icon-btn.edit:hover{border-color:#93c5fd;color:#93c5fd}
 .profile-badge{font-size:9px;font-family:'JetBrains Mono',monospace;background:#0a1a2a;border:1px solid var(--blue);color:#93c5fd;padding:3px 8px;border-radius:3px;line-height:1.5;display:none}
 .profile-badge.on{display:block}
-/* ── 미팅 브리프 ── */
-.meeting-brief-section{margin-bottom:2px}
-.meeting-brief-header{display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:4px 0;user-select:none}
-.meeting-brief-header:hover .section-title{color:var(--accent)}
-.meeting-brief-toggle{font-size:10px;color:var(--muted);transition:transform .2s}
-.meeting-brief-toggle.open{transform:rotate(180deg)}
-.meeting-brief-badge{font-size:9px;background:#052e16;border:1px solid #22c55e;color:#4ade80;padding:2px 6px;border-radius:3px;font-family:'JetBrains Mono',monospace;display:none}
-.meeting-brief-badge.on{display:inline-block}
-.meeting-brief-body{display:none;margin-top:8px}
-.meeting-brief-body.open{display:block}
+/* ── 섹션 접기/펼치기 ── */
+.section-toggle{cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:space-between;padding:2px 0}
+.section-toggle:hover .section-title{color:var(--accent)}
+.section-toggle .toggle-icon{font-size:10px;color:var(--muted);transition:transform .2s}
+.section-toggle.collapsed .toggle-icon{transform:rotate(-90deg)}
+.section-body{overflow:hidden;transition:all .2s ease;margin-top:6px}
+.section-body.collapsed{display:none}
+/* ── 미팅 브리프 / 피사체 ── */
+.on-badge{font-size:9px;background:#052e16;border:1px solid #22c55e;color:#4ade80;padding:2px 6px;border-radius:3px;font-family:'JetBrains Mono',monospace;display:none;margin-left:6px}
+.on-badge.on{display:inline-block}
 .mb-field{margin-bottom:8px}
 .mb-label{font-size:11px;color:var(--muted);margin-bottom:3px;display:block}
 .mb-input{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 10px;font-family:'Noto Sans KR',sans-serif;font-size:13px;outline:none;box-sizing:border-box}
@@ -339,6 +339,10 @@ textarea{resize:vertical;min-height:70px;line-height:1.6}
 .mb-checklist-result.on{display:block}
 .mb-copy-btn{font-size:11px;background:transparent;border:1px solid var(--border);color:var(--muted);padding:3px 8px;border-radius:4px;cursor:pointer;margin-top:6px;float:right}
 .mb-copy-btn:hover{border-color:var(--accent);color:var(--accent)}
+.subject-upload-row{display:flex;gap:6px;align-items:center}
+.subject-upload-btn{background:var(--surface2);border:1px solid var(--border);color:var(--muted);font-size:14px;padding:5px 10px;border-radius:6px;cursor:pointer;transition:all .2s;flex-shrink:0;line-height:1}
+.subject-upload-btn:hover{border-color:var(--accent);color:var(--accent)}
+.subject-upload-btn.loading{pointer-events:none;opacity:.5}
 /* ── 프로필 모달 ── */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:300;align-items:center;justify-content:center}
 .modal-overlay.open{display:flex}
@@ -467,168 +471,246 @@ textarea{resize:vertical;min-height:70px;line-height:1.6}
 <main id="main-layout">
 <aside>
   <!-- ── 채널 프로필 ── -->
-  <div class="profile-section">
-    <div class="section-title" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-      <span>채널 프로필</span>
-      <button class="profile-icon-btn" onclick="openProfileModal(null)">+ 추가</button>
+  <div>
+    <div class="section-toggle collapsed" onclick="toggleSection('sec-profile')">
+      <div class="section-title" style="margin-bottom:0;display:flex;align-items:center;gap:6px">
+        <span>채널 프로필</span>
+        <button class="profile-icon-btn" onclick="event.stopPropagation();openProfileModal(null)" style="font-size:10px;padding:2px 6px">+ 추가</button>
+      </div>
+      <span class="toggle-icon">▾</span>
     </div>
-    <div class="profile-row">
-      <select id="profile-select" class="profile-select" onchange="applyProfile(this.value)">
-        <option value="">-- 프로필 없음 --</option>
-      </select>
-      <button class="profile-icon-btn edit" id="profile-edit-btn" onclick="openProfileModal('edit')" style="display:none">편집</button>
+    <div class="section-body collapsed" id="sec-profile">
+      <div class="profile-row">
+        <select id="profile-select" class="profile-select" onchange="applyProfile(this.value)">
+          <option value="">-- 프로필 없음 --</option>
+        </select>
+        <button class="profile-icon-btn edit" id="profile-edit-btn" onclick="openProfileModal('edit')" style="display:none">편집</button>
+      </div>
+      <div class="profile-badge" id="profile-badge"></div>
     </div>
-    <div class="profile-badge" id="profile-badge"></div>
   </div>
 
   <!-- ── 미팅 브리프 ── -->
-  <div class="meeting-brief-section">
-    <div class="meeting-brief-header" onclick="toggleMeetingBrief()">
-      <span class="section-title" style="margin-bottom:0">미팅 브리프 <span class="meeting-brief-badge" id="brief-badge">ON</span></span>
-      <span class="meeting-brief-toggle" id="brief-toggle">▼</span>
+  <div>
+    <div class="section-toggle collapsed" onclick="toggleSection('sec-brief')">
+      <div class="section-title" style="margin-bottom:0">미팅 브리프 <span class="on-badge" id="brief-badge">ON</span></div>
+      <span class="toggle-icon">▾</span>
     </div>
-    <div class="meeting-brief-body" id="brief-body">
+    <div class="section-body collapsed" id="sec-brief">
       <div class="mb-field">
         <label class="mb-label">이번 콘텐츠 목적</label>
-        <input class="mb-input" id="mb-purpose" placeholder="예: 신제품 런칭, 브랜드 인지도 제고" oninput="updateMeetingBrief('purpose',this.value)">
+        <input class="mb-input" id="brief-purpose" placeholder="예: 신제품 런칭, 브랜드 인지도 제고" oninput="updateMeetingBrief('purpose',this.value)">
       </div>
       <div class="mb-field">
         <label class="mb-label">클라이언트 요청사항</label>
-        <textarea class="mb-ta" id="mb-request" placeholder="예: 감성적 톤, 20대 여성 타겟, 제품 USP 강조" oninput="updateMeetingBrief('request',this.value)"></textarea>
+        <textarea class="mb-ta" id="brief-request" placeholder="예: 감성적 톤, 20대 여성 타겟, 제품 USP 강조" oninput="updateMeetingBrief('request',this.value)"></textarea>
       </div>
       <div class="mb-field">
         <label class="mb-label">레퍼런스 URL</label>
-        <input class="mb-input" id="mb-reference" placeholder="예: https://youtube.com/watch?v=..." oninput="updateMeetingBrief('reference',this.value)">
+        <input class="mb-input" id="brief-ref" placeholder="예: https://youtube.com/watch?v=..." oninput="updateMeetingBrief('reference',this.value)">
       </div>
       <div class="mb-field">
         <label class="mb-label">특이사항</label>
-        <textarea class="mb-ta" id="mb-note" placeholder="예: 로고 노출 필수, 경쟁사 언급 금지, 촬영일 D-7" oninput="updateMeetingBrief('note',this.value)"></textarea>
+        <textarea class="mb-ta" id="brief-note" placeholder="예: 로고 노출 필수, 경쟁사 언급 금지, 촬영일 D-7" oninput="updateMeetingBrief('note',this.value)"></textarea>
       </div>
-      <button class="mb-checklist-btn" onclick="generateMeetingChecklist()">✓ 미팅 체크리스트 생성</button>
+      <button class="mb-checklist-btn" onclick="generateMeetingChecklist()">📋 미팅 체크리스트 생성</button>
       <div class="mb-checklist-result" id="mb-checklist-result"></div>
     </div>
   </div>
 
   <!-- ── 피사체 설정 ── -->
-  <div class="meeting-brief-section">
-    <div class="meeting-brief-header" onclick="toggleSubjectSection()">
-      <span class="section-title" style="margin-bottom:0">피사체 설정 (선택) <span class="meeting-brief-badge" id="subject-badge">ON</span></span>
-      <span class="meeting-brief-toggle" id="subject-toggle">▼</span>
+  <div>
+    <div class="section-toggle collapsed" onclick="toggleSection('sec-subject')">
+      <div class="section-title" style="margin-bottom:0">피사체 설정 (선택) <span class="on-badge" id="subject-badge">ON</span></div>
+      <span class="toggle-icon">▾</span>
     </div>
-    <div class="meeting-brief-body" id="subject-body">
+    <div class="section-body collapsed" id="sec-subject">
       <div class="mb-field">
         <label class="mb-label">인물 1</label>
-        <input class="mb-input" id="sb-person1" placeholder="예: 30대 여성, 단발, 캐주얼 룩" oninput="updateSubject('person1',this.value)">
+        <div class="subject-upload-row">
+          <input class="mb-input" id="subject-person1" placeholder="예: 30대 여성, 단발, 캐주얼 룩" oninput="updateSubject('person1',this.value)" style="flex:1">
+          <button class="subject-upload-btn" id="sub-btn-person1" onclick="triggerSubjectUpload('person1')" title="이미지로 자동 분석">📷</button>
+          <input type="file" accept="image/*" id="subject-file-person1" style="display:none" onchange="handleSubjectUpload('person1',this)">
+        </div>
       </div>
       <div class="mb-field">
-        <label class="mb-label">인물 2</label>
-        <input class="mb-input" id="sb-person2" placeholder="예: 40대 남성, 정장 — 선택" oninput="updateSubject('person2',this.value)">
+        <label class="mb-label">인물 2 (선택)</label>
+        <div class="subject-upload-row">
+          <input class="mb-input" id="subject-person2" placeholder="예: 40대 남성, 정장" oninput="updateSubject('person2',this.value)" style="flex:1">
+          <button class="subject-upload-btn" id="sub-btn-person2" onclick="triggerSubjectUpload('person2')" title="이미지로 자동 분석">📷</button>
+          <input type="file" accept="image/*" id="subject-file-person2" style="display:none" onchange="handleSubjectUpload('person2',this)">
+        </div>
       </div>
       <div class="mb-field">
-        <label class="mb-label">제품/오브젝트</label>
-        <input class="mb-input" id="sb-product" placeholder="예: 로보락 S9, 흰색 원형 로봇청소기" oninput="updateSubject('product',this.value)">
+        <label class="mb-label">제품/오브젝트 (선택)</label>
+        <div class="subject-upload-row">
+          <input class="mb-input" id="subject-product" placeholder="예: 로보락 S9, 흰색 원형 로봇청소기" oninput="updateSubject('product',this.value)" style="flex:1">
+          <button class="subject-upload-btn" id="sub-btn-product" onclick="triggerSubjectUpload('product')" title="이미지로 자동 분석">📷</button>
+          <input type="file" accept="image/*" id="subject-file-product" style="display:none" onchange="handleSubjectUpload('product',this)">
+        </div>
       </div>
       <div class="mb-field">
-        <label class="mb-label">배경/공간</label>
-        <input class="mb-input" id="sb-background" placeholder="예: 모던한 거실, 밝은 자연광" oninput="updateSubject('background',this.value)">
+        <label class="mb-label">배경/공간 (선택)</label>
+        <div class="subject-upload-row">
+          <input class="mb-input" id="subject-bg" placeholder="예: 모던한 거실, 밝은 자연광" oninput="updateSubject('background',this.value)" style="flex:1">
+          <button class="subject-upload-btn" id="sub-btn-background" onclick="triggerSubjectUpload('background')" title="이미지로 자동 분석">📷</button>
+          <input type="file" accept="image/*" id="subject-file-background" style="display:none" onchange="handleSubjectUpload('background',this)">
+        </div>
       </div>
     </div>
   </div>
 
+  <!-- ── 포맷 ── -->
   <div>
-    <div class="section-title">포맷</div>
-    <div class="chip-group" id="chips-format">
-      <div class="chip active" onclick="toggleChip(this)">숏폼</div>
-      <div class="chip" onclick="toggleChip(this)">롱폼</div>
-      <div class="chip" onclick="toggleChip(this)">숏폼+롱폼</div>
+    <div class="section-toggle" onclick="toggleSection('sec-format')">
+      <div class="section-title" style="margin-bottom:0">포맷</div>
+      <span class="toggle-icon">▾</span>
     </div>
-    <div class="runtime-row">
-      <label>목표 러닝타임</label>
-      <input type="text" id="runtime-input" placeholder="예: 60초, 10분, 25분">
-    </div>
-  </div>
-  <div>
-    <div class="section-title">기획 모드</div>
-    <div class="mode-group">
-      <div class="mode-btn active" id="mode-single" onclick="setMode('single')">📄 단편</div>
-      <div class="mode-btn" id="mode-series" onclick="setMode('series')">📺 시리즈</div>
-    </div>
-    <div class="series-wrap" id="series-wrap">
-      <div class="series-ep-row">
-        <label>총 회차 수</label>
-        <input type="number" id="series-count" value="5" min="2" max="20" style="width:60px">
-        <span style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace">EP</span>
+    <div class="section-body" id="sec-format">
+      <div class="chip-group" id="chips-format">
+        <div class="chip active" onclick="toggleChip(this)">숏폼</div>
+        <div class="chip" onclick="toggleChip(this)">롱폼</div>
+        <div class="chip" onclick="toggleChip(this)">숏폼+롱폼</div>
+      </div>
+      <div class="runtime-row">
+        <label>목표 러닝타임</label>
+        <input type="text" id="runtime-input" placeholder="예: 60초, 10분, 25분">
       </div>
     </div>
   </div>
+
+  <!-- ── 장르 ── -->
   <div>
-    <div class="section-title">장르</div>
-    <div class="chip-group" id="chips-genre">
-      <div class="chip" onclick="toggleChip(this)">예능/버라이어티</div>
-      <div class="chip active" onclick="toggleChip(this)">AI 영상</div>
-      <div class="chip" onclick="toggleChip(this)">정보/교육</div>
-      <div class="chip" onclick="toggleChip(this)">브이로그</div>
-      <div class="chip" onclick="toggleChip(this)">드라마/스토리</div>
-      <div class="chip" onclick="toggleChip(this)">리뷰/언박싱</div>
-      <div class="chip" onclick="toggleChip(this)">챌린지</div>
-      <div class="chip" onclick="toggleChip(this)">브랜드 광고</div>
-      <div class="chip" onclick="toggleChip(this)">제품 리뷰 광고</div>
-      <div class="chip" onclick="toggleChip(this)">바이럴 마케팅</div>
-      <div class="chip" onclick="toggleChip(this)">공감/밈</div>
-      <div class="chip" onclick="toggleChip(this)">모큐멘터리</div>
-      <div class="chip" onclick="toggleChip(this)">AI 뉴스/사건재연</div>
-      <div class="chip" onclick="toggleChip(this)">시사/뉴스</div>
-      <div class="chip" onclick="toggleChip(this)">경제/재테크</div>
-      <div class="chip" onclick="toggleChip(this)">스포츠</div>
-      <div class="chip" id="chip-custom" onclick="toggleCustom(this)">직접입력</div>
+    <div class="section-toggle" onclick="toggleSection('sec-genre')">
+      <div class="section-title" style="margin-bottom:0">장르</div>
+      <span class="toggle-icon">▾</span>
+    </div>
+    <div class="section-body" id="sec-genre">
+      <div class="chip-group" id="chips-genre">
+        <div class="chip" onclick="toggleChip(this)">예능/버라이어티</div>
+        <div class="chip active" onclick="toggleChip(this)">AI 영상</div>
+        <div class="chip" onclick="toggleChip(this)">정보/교육</div>
+        <div class="chip" onclick="toggleChip(this)">브이로그</div>
+        <div class="chip" onclick="toggleChip(this)">드라마/스토리</div>
+        <div class="chip" onclick="toggleChip(this)">리뷰/언박싱</div>
+        <div class="chip" onclick="toggleChip(this)">챌린지</div>
+        <div class="chip" onclick="toggleChip(this)">브랜드 광고</div>
+        <div class="chip" onclick="toggleChip(this)">제품 리뷰 광고</div>
+        <div class="chip" onclick="toggleChip(this)">바이럴 마케팅</div>
+        <div class="chip" onclick="toggleChip(this)">공감/밈</div>
+        <div class="chip" onclick="toggleChip(this)">모큐멘터리</div>
+        <div class="chip" onclick="toggleChip(this)">AI 뉴스/사건재연</div>
+        <div class="chip" onclick="toggleChip(this)">시사/뉴스</div>
+        <div class="chip" onclick="toggleChip(this)">경제/재테크</div>
+        <div class="chip" onclick="toggleChip(this)">스포츠</div>
+        <div class="chip" id="chip-custom" onclick="toggleCustom(this)">직접입력</div>
+      </div>
+      <div id="custom-wrap" style="display:none;margin-top:6px">
+        <input type="text" id="custom-genre" placeholder="예: 공포, 먹방, 여행..."/>
+      </div>
     </div>
   </div>
-  <div id="custom-wrap" style="display:none">
-    <input type="text" id="custom-genre" placeholder="예: 공포, 먹방, 여행..."/>
-  </div>
+
+  <!-- ── 타겟 ── -->
   <div>
-    <div class="section-title">타겟</div>
-    <div class="chip-group" id="chips-target">
-      <div class="chip" onclick="toggleChip(this)">10대</div>
-      <div class="chip active" onclick="toggleChip(this)">20대</div>
-      <div class="chip active" onclick="toggleChip(this)">30대</div>
-      <div class="chip" onclick="toggleChip(this)">40대</div>
-      <div class="chip" onclick="toggleChip(this)">50대</div>
+    <div class="section-toggle" onclick="toggleSection('sec-target')">
+      <div class="section-title" style="margin-bottom:0">타겟</div>
+      <span class="toggle-icon">▾</span>
+    </div>
+    <div class="section-body" id="sec-target">
+      <div class="chip-group" id="chips-target">
+        <div class="chip" onclick="toggleChip(this)">10대</div>
+        <div class="chip active" onclick="toggleChip(this)">20대</div>
+        <div class="chip active" onclick="toggleChip(this)">30대</div>
+        <div class="chip" onclick="toggleChip(this)">40대</div>
+        <div class="chip" onclick="toggleChip(this)">50대</div>
+      </div>
     </div>
   </div>
+
+  <!-- ── 기획 모드 ── -->
   <div>
-    <div class="section-title">키워드 / 방향성 (선택)</div>
-    <textarea id="keyword-input" placeholder="예: 공감, 자극적, AI 활용, 역사..."></textarea>
-  </div>
-  <div>
-    <div class="section-title" style="display:flex;align-items:center;justify-content:space-between">
-      <span>실제 사건 / 뉴스 기반 <span style="color:var(--success);margin-left:4px">선택</span></span>
-      <span id="news-badge" style="display:none;background:#0a2a0a;border:1px solid var(--success);color:var(--success);font-size:9px;padding:2px 6px;border-radius:3px;font-family:JetBrains Mono,monospace">ON</span>
+    <div class="section-toggle collapsed" onclick="toggleSection('sec-mode')">
+      <div class="section-title" style="margin-bottom:0">기획 모드</div>
+      <span class="toggle-icon">▾</span>
     </div>
-    <textarea id="news-input" placeholder="실제 뉴스 기사나 사건 내용을 붙여넣으세요.&#10;입력 시 해당 사건 기반으로 아이디어를 생성합니다." style="min-height:90px" oninput="toggleNewsBadge()"></textarea>
-    <div style="font-size:10px;color:var(--muted2);margin-top:4px;font-family:JetBrains Mono,monospace;line-height:1.6">입력하면 실제 사건 기반 모드 자동 활성화</div>
-  </div>
-  <div>
-    <div class="section-title">아이디어 개수</div>
-    <select id="idea-count">
-      <option value="5">5개</option>
-      <option value="10" selected>10개</option>
-      <option value="15">15개</option>
-    </select>
-  </div>
-  <div>
-    <div class="section-title">웹 검색</div>
-    <div class="ws-toggle-wrap" id="ws-toggle" onclick="toggleWebSearch()">
-      <div>
-        <div class="ws-toggle-label">
-          <span class="ws-toggle-icon">🌐</span>
-          <span class="ws-toggle-text" id="ws-toggle-text">웹 검색 OFF</span>
+    <div class="section-body collapsed" id="sec-mode">
+      <div class="mode-group">
+        <div class="mode-btn active" id="mode-single" onclick="setMode('single')">📄 단편</div>
+        <div class="mode-btn" id="mode-series" onclick="setMode('series')">📺 시리즈</div>
+      </div>
+      <div class="series-wrap" id="series-wrap">
+        <div class="series-ep-row">
+          <label>총 회차 수</label>
+          <input type="number" id="series-count" value="5" min="2" max="20" style="width:60px">
+          <span style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace">EP</span>
         </div>
-        <div class="ws-toggle-sub">ON 시 최신 트렌드·뉴스 기반 생성</div>
       </div>
-      <div class="ws-switch" id="ws-switch"></div>
     </div>
   </div>
+
+  <!-- ── 웹 검색 ── -->
+  <div>
+    <div class="section-toggle" onclick="toggleSection('sec-ws')">
+      <div class="section-title" style="margin-bottom:0">웹 검색</div>
+      <span class="toggle-icon">▾</span>
+    </div>
+    <div class="section-body" id="sec-ws">
+      <div class="ws-toggle-wrap" id="ws-toggle" onclick="event.stopPropagation();toggleWebSearch()">
+        <div>
+          <div class="ws-toggle-label">
+            <span class="ws-toggle-icon">🌐</span>
+            <span class="ws-toggle-text" id="ws-toggle-text">웹 검색 OFF</span>
+          </div>
+          <div class="ws-toggle-sub">ON 시 최신 트렌드·뉴스 기반 생성</div>
+        </div>
+        <div class="ws-switch" id="ws-switch"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 아이디어 개수 ── -->
+  <div>
+    <div class="section-toggle" onclick="toggleSection('sec-count')">
+      <div class="section-title" style="margin-bottom:0">아이디어 개수</div>
+      <span class="toggle-icon">▾</span>
+    </div>
+    <div class="section-body" id="sec-count">
+      <select id="idea-count">
+        <option value="5">5개</option>
+        <option value="10" selected>10개</option>
+        <option value="15">15개</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- ── 키워드 / 방향성 ── -->
+  <div>
+    <div class="section-toggle collapsed" onclick="toggleSection('sec-keyword')">
+      <div class="section-title" style="margin-bottom:0">키워드 / 방향성 (선택)</div>
+      <span class="toggle-icon">▾</span>
+    </div>
+    <div class="section-body collapsed" id="sec-keyword">
+      <textarea id="keyword-input" placeholder="예: 공감, 자극적, AI 활용, 역사..."></textarea>
+    </div>
+  </div>
+
+  <!-- ── 실제 사건/뉴스 기반 ── -->
+  <div>
+    <div class="section-toggle collapsed" onclick="toggleSection('sec-news')">
+      <div class="section-title" style="margin-bottom:0;display:flex;align-items:center;gap:6px">
+        <span>실제 사건 / 뉴스 기반</span>
+        <span style="color:var(--success)">선택</span>
+        <span id="news-badge" style="display:none;background:#0a2a0a;border:1px solid var(--success);color:var(--success);font-size:9px;padding:2px 6px;border-radius:3px;font-family:JetBrains Mono,monospace">ON</span>
+      </div>
+      <span class="toggle-icon">▾</span>
+    </div>
+    <div class="section-body collapsed" id="sec-news">
+      <textarea id="news-input" placeholder="실제 뉴스 기사나 사건 내용을 붙여넣으세요.&#10;입력 시 해당 사건 기반으로 아이디어를 생성합니다." style="min-height:90px" oninput="toggleNewsBadge()"></textarea>
+      <div style="font-size:10px;color:var(--muted2);margin-top:4px;font-family:JetBrains Mono,monospace;line-height:1.6">입력하면 실제 사건 기반 모드 자동 활성화</div>
+    </div>
+  </div>
+
   <button class="generate-btn" id="gen-btn" onclick="generate()">⚡ 기획 자동 생성</button>
 </aside>
 
@@ -996,19 +1078,20 @@ function updateMeetingBrief(key, val){
   var b=appState.meetingBrief;
   var hasData=[b.purpose,b.request,b.reference,b.note].some(function(v){return v&&v.trim();});
   var badge=document.getElementById('brief-badge');
-  if(badge) badge.className='meeting-brief-badge'+(hasData?' on':'');
+  if(badge) badge.className='on-badge'+(hasData?' on':'');
 }
-function toggleMeetingBrief(){
-  var body=document.getElementById('brief-body');
-  var toggle=document.getElementById('brief-toggle');
-  if(!body||!toggle) return;
-  var isOpen=body.classList.contains('open');
-  body.classList.toggle('open',!isOpen);
-  toggle.classList.toggle('open',!isOpen);
+function toggleSection(id){
+  var body=document.getElementById(id);
+  if(!body)return;
+  var toggle=body.previousElementSibling;
+  if(!toggle)return;
+  var isCollapsed=body.classList.contains('collapsed');
+  body.classList.toggle('collapsed',!isCollapsed);
+  toggle.classList.toggle('collapsed',!isCollapsed);
 }
 async function generateMeetingChecklist(){
-  var apiKey=document.getElementById('api-key').value.trim();
-  if(!apiKey){alert('API 키를 먼저 입력해주세요');return;}
+  var oaiKey=document.getElementById('openai-key').value.trim();
+  if(!oaiKey){alert('OpenAI 키를 먼저 입력해주세요');return;}
   var resultBox=document.getElementById('mb-checklist-result');
   resultBox.className='mb-checklist-result on';
   resultBox.innerHTML='<div class="loading-text">체크리스트 생성 중...</div>';
@@ -1024,7 +1107,14 @@ async function generateMeetingChecklist(){
     '마크다운 없이 텍스트로만 출력.'
   ].filter(Boolean).join(NL);
   try{
-    var raw=await callAPI(prompt,2000);
+    var res=await fetch('https://api.openai.com/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+oaiKey},
+      body:JSON.stringify({model:'gpt-4.1',messages:[{role:'user',content:prompt}],max_tokens:2000})
+    });
+    if(!res.ok) throw new Error('API 오류: '+res.status);
+    var d=await res.json();
+    var raw=(d.choices&&d.choices[0])?d.choices[0].message.content:'결과 없음';
     function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
     resultBox.innerHTML='<button class="mb-copy-btn" onclick="copyMeetingChecklist()">복사</button><pre style="margin:0;white-space:pre-wrap;font-family:\'Noto Sans KR\',sans-serif;font-size:12px">'+esc(raw)+'</pre>';
   } catch(e){
@@ -1081,13 +1171,32 @@ function saveOpenAIKey(){
   var s=document.getElementById('openai-key-status');
   if(s){s.textContent=k?'입력됨 ✓':'미입력';s.className='key-status '+(k?'ok':'empty');}
 }
+async function analyzeImage(base64Image){
+  var key=document.getElementById('openai-key').value.trim();
+  if(!key)return null;
+  var res=await fetch('https://api.openai.com/v1/chat/completions',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+    body:JSON.stringify({
+      model:'gpt-4.1',
+      messages:[{role:'user',content:[
+        {type:'text',text:'이 이미지에 있는 인물 또는 제품/오브젝트를 영상 제작 콘티용으로 묘사해줘. 성별, 나이대, 체형, 헤어스타일, 의상, 분위기를 구체적으로 한 문장으로. 한국어로.'},
+        {type:'image_url',image_url:{url:'data:image/jpeg;base64,'+base64Image}}
+      ]}],
+      max_tokens:200
+    })
+  });
+  if(!res.ok)return null;
+  var d=await res.json();
+  return d.choices&&d.choices[0]?d.choices[0].message.content:null;
+}
 async function generateImage(prompt){
   var key=document.getElementById('openai-key').value.trim();
   if(!key)return null;
   var res=await fetch('https://api.openai.com/v1/images/generations',{
     method:'POST',
     headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
-    body:JSON.stringify({model:'dall-e-3',prompt:prompt,n:1,size:'1792x1024'})
+    body:JSON.stringify({model:'gpt-image-1',prompt:prompt,n:1,size:'1536x1024'})
   });
   if(!res.ok)return null;
   var d=await res.json();
@@ -1111,15 +1220,37 @@ function updateSubject(key,val){
   var s=appState.subject;
   var hasData=[s.person1,s.person2,s.product,s.background].some(function(v){return v&&v.trim();});
   var badge=document.getElementById('subject-badge');
-  if(badge)badge.className='meeting-brief-badge'+(hasData?' on':'');
+  if(badge)badge.className='on-badge'+(hasData?' on':'');
 }
-function toggleSubjectSection(){
-  var body=document.getElementById('subject-body');
-  var toggle=document.getElementById('subject-toggle');
-  if(!body||!toggle)return;
-  var isOpen=body.classList.contains('open');
-  body.classList.toggle('open',!isOpen);
-  toggle.classList.toggle('open',!isOpen);
+function triggerSubjectUpload(field){
+  var fileInput=document.getElementById('subject-file-'+field);
+  if(fileInput)fileInput.click();
+}
+async function handleSubjectUpload(field,input){
+  if(!input.files||!input.files[0])return;
+  var oaiKey=document.getElementById('openai-key').value.trim();
+  if(!oaiKey){alert('OpenAI 키를 먼저 입력해주세요');input.value='';return;}
+  var btn=document.getElementById('sub-btn-'+field);
+  if(btn){btn.textContent='⏳';btn.classList.add('loading');}
+  var reader=new FileReader();
+  reader.onload=async function(e){
+    var base64=e.target.result.split(',')[1];
+    try{
+      var desc=await analyzeImage(base64);
+      if(desc){
+        var idMap={person1:'subject-person1',person2:'subject-person2',product:'subject-product',background:'subject-bg'};
+        var el=document.getElementById(idMap[field]);
+        if(el){el.value=desc;updateSubject(field,desc);}
+      } else {
+        alert('이미지 분석에 실패했습니다.');
+      }
+    }catch(err){
+      alert('이미지 분석 오류: '+String(err.message||err));
+    }
+    if(btn){btn.textContent='📷';btn.classList.remove('loading');}
+    input.value='';
+  };
+  reader.readAsDataURL(input.files[0]);
 }
 function checkKey(){
   var k=getKey(), s=document.getElementById('key-status'), w=document.getElementById('token-warning');
@@ -2890,7 +3021,7 @@ async function triggerCutImage(areaId, imgPrompt){
   if(!area)return;
   area.innerHTML='<div class="sb-img-loading"><div class="loader" style="width:20px;height:20px;border-width:2px"></div><span style="font-size:11px;color:var(--muted)">생성 중...</span></div>';
   var subCtx=getSubjectContext();
-  var finalPrompt=(subCtx?subCtx+'\n':'')+imgPrompt;
+  var finalPrompt=(subCtx?subCtx+'\n':'')+imgPrompt+', cinematic, 16:9';
   try{
     var url=await generateImage(finalPrompt);
     if(url){
