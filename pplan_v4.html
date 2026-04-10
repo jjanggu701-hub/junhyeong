@@ -287,6 +287,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.7}
     <div style="display:flex;gap:6px;margin-top:8px">
       <button id="biz-btn" onclick="generateBizAnalysis()" style="background:var(--surface2);border:1px solid var(--trend);color:var(--trend);flex:1;padding:8px;border-radius:6px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;font-size:13px;transition:all .2s">💰 사업성 분석</button>
       <button onclick="linkToYPLAN()" style="background:var(--surface2);border:1px solid var(--success);color:var(--success);flex:1;padding:8px;border-radius:6px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;font-size:13px;transition:all .2s">🔗 YPLAN으로 연동</button>
+      <button onclick="cloneProject()" style="background:var(--surface2);border:1px solid var(--purple);color:var(--purple);flex:1;padding:8px;border-radius:6px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;font-size:13px;transition:all .2s">📋 프로젝트 복제</button>
     </div>
     <div id="biz-result" style="display:none;margin-top:10px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
@@ -405,6 +406,8 @@ textarea{resize:vertical;min-height:72px;line-height:1.7}
         <div class="result-header">
           <span class="step-badge" style="background:var(--blue)">STEP 02</span>
           <span class="result-title">제안개요 + 디렉터 인텐션</span>
+          <button class="copy-btn" onclick="generateOverview()">↺ 재생성</button>
+          <button class="copy-btn" onclick="toggleEdit('overview')" style="border-color:var(--blue);color:var(--blue)">✏ 수정</button>
           <button class="copy-btn" onclick="copyEl('overview-container')">COPY</button>
         </div>
         <div class="eval-bar" id="eval-bar">
@@ -413,6 +416,19 @@ textarea{resize:vertical;min-height:72px;line-height:1.7}
           <div class="eval-score" id="eval-score"></div>
         </div>
         <div id="overview-container"></div>
+        <div id="edit-overview" style="display:none;padding:14px;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;margin-top:10px">
+          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px">
+            <label style="font-size:11px;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" class="edit-opt" value="제목과 구조는 반드시 유지할 것."> 제목/구조 유지</label>
+            <label style="font-size:11px;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" class="edit-opt" value="톤앤매너는 반드시 유지할 것."> 톤앤매너 유지</label>
+            <label style="font-size:11px;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" class="edit-opt" value="길이와 분량은 반드시 유지할 것."> 길이/분량 유지</label>
+            <label style="font-size:11px;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" class="edit-opt" value="클라이언트 정보는 반드시 유지할 것."> 클라이언트 정보 유지</label>
+          </div>
+          <textarea id="edit-overview-text" placeholder="예: 더 클라이언트 친화적으로 / 더 간결하게 / 브랜드 톤 강화 / 연출 의도 더 구체적으로 / 회의용 문체로 정리" style="min-height:60px;margin-bottom:8px"></textarea>
+          <div style="display:flex;gap:6px">
+            <button onclick="applyEdit('overview')" style="background:var(--blue);color:#fff;border:none;padding:7px 16px;border-radius:5px;cursor:pointer;font-size:12px;font-family:'Noto Sans KR',sans-serif">수정 적용</button>
+            <button onclick="toggleEdit('overview')" style="background:var(--surface);border:1px solid var(--border);color:var(--muted);padding:7px 16px;border-radius:5px;cursor:pointer;font-size:12px;font-family:'Noto Sans KR',sans-serif">취소</button>
+          </div>
+        </div>
         <button class="next-btn" id="next-concept-btn" onclick="generateConcept()" style="display:none;border-color:#1a2510">
           <span class="next-btn-icon" style="background:#0a1a08;color:var(--success);border:1px solid rgba(62,207,112,.3)">STEP 03</span>
           <div><div class="next-btn-text">컨셉 &amp; 메시지 생성</div><div class="next-btn-sub">톤앤매너 · 키메시지 · 크리에이티브 컨셉</div></div>
@@ -426,9 +442,24 @@ textarea{resize:vertical;min-height:72px;line-height:1.7}
         <div class="result-header">
           <span class="step-badge" style="background:var(--success);color:#000">STEP 03</span>
           <span class="result-title">컨셉 및 메시지</span>
+          <button class="copy-btn" onclick="generateConcept()">↺ 재생성</button>
+          <button class="copy-btn" onclick="toggleEdit('concept')" style="border-color:var(--blue);color:var(--blue)">✏ 수정</button>
           <button class="copy-btn" onclick="copyEl('concept-container')">COPY</button>
         </div>
         <div id="concept-container"></div>
+        <div id="edit-concept" style="display:none;padding:14px;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;margin-top:10px">
+          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px">
+            <label style="font-size:11px;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" class="edit-opt" value="제목과 구조는 반드시 유지할 것."> 제목/구조 유지</label>
+            <label style="font-size:11px;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" class="edit-opt" value="톤앤매너는 반드시 유지할 것."> 톤앤매너 유지</label>
+            <label style="font-size:11px;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" class="edit-opt" value="길이와 분량은 반드시 유지할 것."> 길이/분량 유지</label>
+            <label style="font-size:11px;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" class="edit-opt" value="클라이언트 정보는 반드시 유지할 것."> 클라이언트 정보 유지</label>
+          </div>
+          <textarea id="edit-concept-text" placeholder="예: 더 클라이언트 친화적으로 / 더 간결하게 / 브랜드 톤 강화 / 연출 의도 더 구체적으로 / 회의용 문체로 정리" style="min-height:60px;margin-bottom:8px"></textarea>
+          <div style="display:flex;gap:6px">
+            <button onclick="applyEdit('concept')" style="background:var(--blue);color:#fff;border:none;padding:7px 16px;border-radius:5px;cursor:pointer;font-size:12px;font-family:'Noto Sans KR',sans-serif">수정 적용</button>
+            <button onclick="toggleEdit('concept')" style="background:var(--surface);border:1px solid var(--border);color:var(--muted);padding:7px 16px;border-radius:5px;cursor:pointer;font-size:12px;font-family:'Noto Sans KR',sans-serif">취소</button>
+          </div>
+        </div>
         <button class="next-btn" id="next-board-btn" onclick="generateBoard()" style="display:none;border-color:#15101a">
           <span class="next-btn-icon" style="background:#100d1a;color:var(--purple);border:1px solid rgba(181,123,238,.3)">STEP 04</span>
           <div><div class="next-btn-text" id="board-btn-text">스토리보드 생성</div><div class="next-btn-sub" id="board-btn-sub">씬별 장면묘사 · SOV 대사 · TEXT 자막</div></div>
@@ -442,9 +473,24 @@ textarea{resize:vertical;min-height:72px;line-height:1.7}
         <div class="result-header">
           <span class="step-badge" style="background:var(--purple)">STEP 04</span>
           <span class="result-title" id="board-title">스토리보드</span>
+          <button class="copy-btn" onclick="generateBoard()">↺ 재생성</button>
+          <button class="copy-btn" onclick="toggleEdit('board')" style="border-color:var(--blue);color:var(--blue)">✏ 수정</button>
           <button class="copy-btn" onclick="copyEl('board-container')">COPY</button>
         </div>
         <div id="board-container"></div>
+        <div id="edit-board" style="display:none;padding:14px;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;margin-top:10px">
+          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px">
+            <label style="font-size:11px;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" class="edit-opt" value="제목과 구조는 반드시 유지할 것."> 제목/구조 유지</label>
+            <label style="font-size:11px;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" class="edit-opt" value="톤앤매너는 반드시 유지할 것."> 톤앤매너 유지</label>
+            <label style="font-size:11px;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" class="edit-opt" value="길이와 분량은 반드시 유지할 것."> 길이/분량 유지</label>
+            <label style="font-size:11px;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" class="edit-opt" value="클라이언트 정보는 반드시 유지할 것."> 클라이언트 정보 유지</label>
+          </div>
+          <textarea id="edit-board-text" placeholder="예: 더 클라이언트 친화적으로 / 더 간결하게 / 브랜드 톤 강화 / 연출 의도 더 구체적으로 / 회의용 문체로 정리" style="min-height:60px;margin-bottom:8px"></textarea>
+          <div style="display:flex;gap:6px">
+            <button onclick="applyEdit('board')" style="background:var(--blue);color:#fff;border:none;padding:7px 16px;border-radius:5px;cursor:pointer;font-size:12px;font-family:'Noto Sans KR',sans-serif">수정 적용</button>
+            <button onclick="toggleEdit('board')" style="background:var(--surface);border:1px solid var(--border);color:var(--muted);padding:7px 16px;border-radius:5px;cursor:pointer;font-size:12px;font-family:'Noto Sans KR',sans-serif">취소</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -604,6 +650,100 @@ function handleSubjectUpload(inputId, btnEl) {
     reader.readAsDataURL(file);
   };
   fileInput.click();
+}
+
+// ── 프로젝트 복제 ──
+function cloneProject() {
+  localStorage.setItem('pplan_last_project', JSON.stringify(state));
+  document.getElementById('inp-project').value = '';
+  state.overviewData = null;
+  state.conceptData = null;
+  state.boardData = null;
+  sh('result-area'); sb('empty-state');
+  ['sec-summary','sec-overview','sec-concept','sec-board'].forEach(function(id){ sh(id); });
+  document.getElementById('step-bar').classList.remove('vis');
+  document.getElementById('export-btn').classList.remove('vis');
+  document.getElementById('reset-btn').classList.remove('vis');
+  document.getElementById('gen-btn').disabled = false;
+  document.getElementById('gen-btn').textContent = '⚡ 기획서 자동 생성';
+  alert('이전 프로젝트 설정은 유지됩니다.\n프로젝트명만 입력하고 생성을 시작하세요.');
+}
+
+// ── 수정 기능 ──
+function toggleEdit(step) {
+  var el = document.getElementById('edit-' + step);
+  if (el.style.display === 'none') {
+    el.style.display = 'block';
+    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  } else {
+    el.style.display = 'none';
+  }
+}
+
+async function applyEdit(step) {
+  var textEl = document.getElementById('edit-' + step + '-text');
+  var instruction = textEl.value.trim();
+  if (!instruction) { alert('수정 지시를 입력해주세요.'); return; }
+
+  var editPanel = document.getElementById('edit-' + step);
+  var opts = [];
+  editPanel.querySelectorAll('.edit-opt:checked').forEach(function(cb) { opts.push(cb.value); });
+  var keepStr = opts.length ? opts.join(' ') + '\n' : '';
+
+  var containerMap = { overview: 'overview-container', concept: 'concept-container', board: 'board-container' };
+  var con = document.getElementById(containerMap[step]);
+  var prevContent = con.innerText;
+
+  // 수정 전 히스토리 백업
+  if (!state._editHistory) state._editHistory = {};
+  if (!state._editHistory[step]) state._editHistory[step] = [];
+  state._editHistory[step].push(prevContent);
+
+  var editDirective = '\n\n=== 수정 지시 ===\n아래 지시에 따라 위 결과물을 수정해줘.\n기존 구조와 형식은 유지하고 내용만 수정할 것.\n' + keepStr + '수정 지시: ' + instruction + '\n=================';
+
+  var isBoard = step === 'board';
+  var isSeries = state.info && state.info.genre === '유튜브시리즈';
+
+  con.innerHTML = '<div class="loading-state"><div class="loader"></div><div class="loading-text">수정 적용 중...</div></div>';
+  editPanel.style.display = 'none';
+
+  try {
+    if (step === 'overview') {
+      var prompt = '아래는 PPM 제안개요 결과물이다.\n\n' + prevContent + editDirective
+        + '\n\n반드시 JSON만 출력. 코드블록 없이.\n{"title":"","client":"","format":"","duration":"","episodes":"","production_points":[""],"director_intention":"","eval":{"hook":true,"structure":true,"target":true,"tone":true,"story":true}}';
+      var raw = await callAPI(prompt, 1800);
+      var d = parseJ(raw, false);
+      state.overviewData = d;
+      renderOverview(d);
+      renderEval(d.eval || {});
+    } else if (step === 'concept') {
+      var prompt = '아래는 영상 컨셉 및 메시지 결과물이다.\n\n' + prevContent + editDirective
+        + '\n\nJSON만 출력. 코드블록 없이.\n{"planning_intent":"","tone_manner":[""],"tone_description":"","creative_concept":"","key_message":""}';
+      var raw = await callAPI(prompt, 2000);
+      var d = parseJ(raw, false);
+      state.conceptData = d;
+      renderConcept(d);
+    } else if (isBoard) {
+      if (isSeries) {
+        var prompt = '아래는 화별 진행가이드 결과물이다.\n\n' + prevContent + editDirective
+          + '\n\nJSON 배열만 출력. 코드블록 없이.\n[{"ep_num":"","ep_title":"","opening":{"label":"","desc":"","points":[""]},"main":{"label":"","desc":"","points":[""]},"closing":{"label":"","desc":"","points":[""]}}]';
+        var raw = await callAPI(prompt, 2000);
+        var d = parseJ(raw, true);
+        state.boardData = { episodes: d };
+        renderGuide(state.boardData);
+      } else {
+        var prompt = '아래는 씬별 스토리보드 결과물이다.\n\n' + prevContent + editDirective
+          + '\n\nJSON 배열만 출력. 코드블록 없이.\n[{"num":"","location":"","time":"","description":"","sov":"","caption":[""]}]';
+        var raw = await callAPI(prompt, 2000);
+        var d = parseJ(raw, true);
+        state.boardData = { scenes: d };
+        renderStoryboard(state.boardData);
+      }
+    }
+    textEl.value = '';
+  } catch(e) {
+    con.innerHTML = '<div class="error-box">수정 오류: ' + e.message + '<br><br><button class="retry-btn" onclick="applyEdit(\'' + step + '\')">다시 시도</button></div>';
+  }
 }
 
 // ── YPLAN 연동 ──
