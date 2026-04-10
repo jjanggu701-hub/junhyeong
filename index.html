@@ -343,6 +343,25 @@ textarea{resize:vertical;min-height:70px;line-height:1.6}
 .subject-upload-btn{background:var(--surface2);border:1px solid var(--border);color:var(--muted);font-size:14px;padding:5px 10px;border-radius:6px;cursor:pointer;transition:all .2s;flex-shrink:0;line-height:1}
 .subject-upload-btn:hover{border-color:var(--accent);color:var(--accent)}
 .subject-upload-btn.loading{pointer-events:none;opacity:.5}
+/* ── 재생성/수정 버튼 ── */
+.step-action-btn{background:var(--surface2);border:1px solid var(--border);color:var(--muted);font-size:11px;padding:4px 10px;border-radius:4px;cursor:pointer;font-family:'JetBrains Mono',monospace;transition:all .2s}
+.step-action-btn:hover{border-color:var(--accent);color:var(--accent)}
+.step-action-btn.edit-btn{border-color:var(--blue);color:var(--blue)}
+.step-action-btn.edit-btn:hover{background:#0a1a2a}
+.step-action-btn.series-btn{border-color:var(--purple);color:var(--purple)}
+.step-action-btn.series-btn:hover{background:#1a0d2a}
+.step-edit-panel{display:none;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-top:10px;animation:fadeIn .3s ease}
+.step-edit-panel.open{display:block}
+.step-edit-opts{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+.step-edit-opts label{font-size:11px;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:4px;user-select:none}
+.step-edit-opts input[type=checkbox]{accent-color:var(--blue)}
+.step-edit-ta{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:8px 12px;font-family:'Noto Sans KR',sans-serif;font-size:13px;outline:none;resize:vertical;min-height:70px;line-height:1.6;box-sizing:border-box}
+.step-edit-ta:focus{border-color:var(--accent)}
+.step-edit-actions{display:flex;gap:8px;margin-top:8px;justify-content:flex-end}
+.step-edit-apply{background:var(--accent);color:white;border:none;border-radius:6px;padding:7px 16px;font-size:12px;font-family:'Noto Sans KR',sans-serif;cursor:pointer}
+.step-edit-apply:hover{background:#e02020}
+.step-edit-cancel{background:var(--surface2);border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:7px 14px;font-size:12px;font-family:'Noto Sans KR',sans-serif;cursor:pointer}
+.step-edit-cancel:hover{color:var(--text)}
 /* ── 프로필 모달 ── */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:300;align-items:center;justify-content:center}
 .modal-overlay.open{display:flex}
@@ -736,71 +755,143 @@ textarea{resize:vertical;min-height:70px;line-height:1.6}
         </div>
         <div class="idea-grid" id="ideas-container"></div>
       </div>
-      <!-- STEP 02 -->
+            <!-- STEP 02 -->
       <div id="plan-section" style="display:none">
         <div class="result-header">
           <span class="result-badge" style="background:var(--success)">STEP 02</span>
           <span class="result-title">기획서</span>
           <button class="copy-btn" onclick="copyEl('plan-container')">COPY</button>
+          <button class="step-action-btn" onclick="selectIdea(document.querySelector('.idea-card.selected'),window._lastIdea)">↺ 재생성</button>
+          <button class="step-action-btn edit-btn" onclick="openEditPanel('plan')">✏ 수정</button>
+          <button class="step-action-btn series-btn" id="series-next-btn" style="display:none" onclick="generateNextEpisode()">📋 다음 회차 생성</button>
         </div>
         <div id="plan-history-bar" class="thumb-history-bar" style="display:none"></div>
         <div id="plan-container"></div>
+        <div class="step-edit-panel" id="edit-panel-plan">
+          <div class="step-edit-opts">
+            <label><input type="checkbox" id="edit-keep-struct-plan" checked> 제목/구조 유지</label>
+            <label><input type="checkbox" id="edit-keep-tone-plan"> 톤앤매너 유지</label>
+            <label><input type="checkbox" id="edit-keep-len-plan"> 길이/분량 유지</label>
+          </div>
+          <textarea class="step-edit-ta" id="edit-ta-plan" placeholder="예: 더 예능적으로 / 더 간결하게 / 훅을 더 강하게 /&#10; 브랜드 톤 유지하면서 수정 / 회의용 문체로 정리"></textarea>
+          <div class="step-edit-actions">
+            <button class="step-edit-cancel" onclick="closeEditPanel('plan')">취소</button>
+            <button class="step-edit-apply" onclick="applyStepEdit('plan')">수정 적용</button>
+          </div>
+        </div>
         <button class="next-step-btn" id="treatment-btn" onclick="generateTreatment()" style="display:none;border-color:#1a3a6a">
           <span class="next-step-icon" style="background:var(--blue);color:white">STEP 03</span>
           <div><div class="next-step-text">트리트먼트 생성</div><div class="next-step-sub">시퀀스별 씬 구성 + 영상 흐름 설계</div></div>
         </button>
       </div>
-      <!-- STEP 03 -->
+            <!-- STEP 03 -->
       <div id="treatment-section" style="display:none">
         <div class="result-header">
           <span class="result-badge" style="background:var(--blue)">STEP 03</span>
           <span class="result-title">트리트먼트</span>
           <button class="copy-btn" onclick="copyEl('treatment-container')">COPY</button>
+          <button class="step-action-btn" onclick="generateTreatment()">↺ 재생성</button>
+          <button class="step-action-btn edit-btn" onclick="openEditPanel('treatment')">✏ 수정</button>
         </div>
         <div id="treatment-history-bar" class="thumb-history-bar" style="display:none"></div>
         <div id="treatment-container"></div>
+        <div class="step-edit-panel" id="edit-panel-treatment">
+          <div class="step-edit-opts">
+            <label><input type="checkbox" id="edit-keep-struct-treatment" checked> 제목/구조 유지</label>
+            <label><input type="checkbox" id="edit-keep-tone-treatment"> 톤앤매너 유지</label>
+            <label><input type="checkbox" id="edit-keep-len-treatment"> 길이/분량 유지</label>
+          </div>
+          <textarea class="step-edit-ta" id="edit-ta-treatment" placeholder="예: 더 예능적으로 / 더 간결하게 / 훅을 더 강하게 /&#10; 브랜드 톤 유지하면서 수정 / 회의용 문체로 정리"></textarea>
+          <div class="step-edit-actions">
+            <button class="step-edit-cancel" onclick="closeEditPanel('treatment')">취소</button>
+            <button class="step-edit-apply" onclick="applyStepEdit('treatment')">수정 적용</button>
+          </div>
+        </div>
         <button class="next-step-btn" id="script-btn" onclick="generateScript()" style="display:none;border-color:#3a1a5a">
           <span class="next-step-icon" style="background:var(--purple);color:white">STEP 04</span>
           <div><div class="next-step-text">대본 / 스크립트 생성</div><div class="next-step-sub">연출 + 보이스오버 + 인물대사 + 자막</div></div>
         </button>
       </div>
-      <!-- STEP 04 -->
+            <!-- STEP 04 -->
       <div id="script-section" style="display:none">
         <div class="result-header">
           <span class="result-badge" style="background:var(--purple)">STEP 04</span>
           <span class="result-title">대본 / 스크립트</span>
           <button class="copy-btn" onclick="copyEl('script-container')">COPY</button>
+          <button class="step-action-btn" onclick="generateScript()">↺ 재생성</button>
+          <button class="step-action-btn edit-btn" onclick="openEditPanel('script')">✏ 수정</button>
         </div>
         <div id="script-history-bar" class="thumb-history-bar" style="display:none"></div>
         <div id="script-container"></div>
+        <div class="step-edit-panel" id="edit-panel-script">
+          <div class="step-edit-opts">
+            <label><input type="checkbox" id="edit-keep-struct-script" checked> 제목/구조 유지</label>
+            <label><input type="checkbox" id="edit-keep-tone-script"> 톤앤매너 유지</label>
+            <label><input type="checkbox" id="edit-keep-len-script"> 길이/분량 유지</label>
+          </div>
+          <textarea class="step-edit-ta" id="edit-ta-script" placeholder="예: 더 예능적으로 / 더 간결하게 / 훅을 더 강하게 /&#10; 브랜드 톤 유지하면서 수정 / 회의용 문체로 정리"></textarea>
+          <div class="step-edit-actions">
+            <button class="step-edit-cancel" onclick="closeEditPanel('script')">취소</button>
+            <button class="step-edit-apply" onclick="applyStepEdit('script')">수정 적용</button>
+          </div>
+        </div>
         <button class="next-step-btn" id="storyboard-btn" onclick="generateStoryboard()" style="display:none;border-color:#1a3a1a">
           <span class="next-step-icon" style="background:var(--success);color:#000">STEP 05</span>
           <div><div class="next-step-text">콘티 / 스토리보드 시트 생성</div><div class="next-step-sub">Scene → Cut 분해 · 촬영 설계 · AI 프롬프트</div></div>
         </button>
       </div>
-      <!-- STEP 05 -->
+            <!-- STEP 05 -->
       <div id="storyboard-section" style="display:none">
         <div class="result-header">
           <span class="result-badge" style="background:var(--success);color:#000">STEP 05</span>
           <span class="result-title">콘티 / 스토리보드 시트</span>
           <button class="copy-btn" onclick="copyEl('storyboard-container')">COPY ALL</button>
+          <button class="step-action-btn" onclick="generateStoryboard()">↺ 재생성</button>
+          <button class="step-action-btn edit-btn" onclick="openEditPanel('storyboard')">✏ 수정</button>
         </div>
         <div id="storyboard-history-bar" class="thumb-history-bar" style="display:none"></div>
         <div id="storyboard-container"></div>
+        <div class="step-edit-panel" id="edit-panel-storyboard">
+          <div class="step-edit-opts">
+            <label><input type="checkbox" id="edit-keep-struct-storyboard" checked> 제목/구조 유지</label>
+            <label><input type="checkbox" id="edit-keep-tone-storyboard"> 톤앤매너 유지</label>
+            <label><input type="checkbox" id="edit-keep-len-storyboard"> 길이/분량 유지</label>
+          </div>
+          <textarea class="step-edit-ta" id="edit-ta-storyboard" placeholder="예: 더 예능적으로 / 더 간결하게 / 훅을 더 강하게 /&#10; 브랜드 톤 유지하면서 수정 / 회의용 문체로 정리"></textarea>
+          <div class="step-edit-actions">
+            <button class="step-edit-cancel" onclick="closeEditPanel('storyboard')">취소</button>
+            <button class="step-edit-apply" onclick="applyStepEdit('storyboard')">수정 적용</button>
+          </div>
+        </div>
         <button class="next-step-btn" id="thumbnail-btn" onclick="generateThumbnail()" style="display:none;border-color:#3a1a0a">
           <span class="next-step-icon" style="background:#fb923c;color:#000">STEP 06</span>
           <div><div class="next-step-text">썸네일 기획서 생성</div><div class="next-step-sub">레이아웃 · 카피 · 색감 방향 3안</div></div>
         </button>
       </div>
-      <!-- STEP 06 -->
+            <!-- STEP 06 -->
       <div id="thumbnail-section" style="display:none">
         <div class="result-header">
           <span class="result-badge" style="background:#fb923c;color:#000">STEP 06</span>
           <span class="result-title">썸네일 기획서</span>
           <button class="copy-btn" onclick="copyEl('thumbnail-container')">COPY</button>
+          <button class="step-action-btn" onclick="generateThumbnail()">↺ 재생성</button>
+          <button class="step-action-btn edit-btn" onclick="openEditPanel('thumbnail')">✏ 수정</button>
         </div>
         <div id="thumbnail-history-bar" class="thumb-history-bar" style="display:none"></div>
         <div id="thumbnail-container"></div>
+        <div class="step-edit-panel" id="edit-panel-thumbnail">
+          <div class="step-edit-opts">
+            <label><input type="checkbox" id="edit-keep-struct-thumbnail" checked> 제목/구조 유지</label>
+            <label><input type="checkbox" id="edit-keep-tone-thumbnail"> 톤앤매너 유지</label>
+            <label><input type="checkbox" id="edit-keep-len-thumbnail"> 길이/분량 유지</label>
+          </div>
+          <textarea class="step-edit-ta" id="edit-ta-thumbnail" placeholder="예: 더 예능적으로 / 더 간결하게 / 훅을 더 강하게 /&#10; 브랜드 톤 유지하면서 수정 / 회의용 문체로 정리"></textarea>
+          <div class="step-edit-actions">
+            <button class="step-edit-cancel" onclick="closeEditPanel('thumbnail')">취소</button>
+            <button class="step-edit-apply" onclick="applyStepEdit('thumbnail')">수정 적용</button>
+          </div>
+        </div>
+        
       </div>
     </div>
   </div>
@@ -2365,6 +2456,8 @@ async function selectIdea(card,idea){
         saveStepHistory('plan',planHtml);
         document.getElementById('treatment-btn').style.display='flex';
         document.getElementById('export-wrap').style.display='block';
+        var snb=document.getElementById('series-next-btn');
+        if(snb)snb.style.display=getMode()==='series'?'inline-block':'none';
         setStep(2);
         break;
       } else {
@@ -2741,6 +2834,129 @@ function resetAllHistories(){
     var bar=document.getElementById(appState.stepHistories[k].barId);
     if(bar)bar.style.display='none';
   });
+}
+
+// ── 수정 패널 ──
+function openEditPanel(key){
+  var panel=document.getElementById('edit-panel-'+key);
+  if(panel)panel.classList.add('open');
+}
+function closeEditPanel(key){
+  var panel=document.getElementById('edit-panel-'+key);
+  if(panel)panel.classList.remove('open');
+  var ta=document.getElementById('edit-ta-'+key);
+  if(ta)ta.value='';
+}
+async function applyStepEdit(key){
+  var ta=document.getElementById('edit-ta-'+key);
+  var userInput=(ta?ta.value:'').trim();
+  if(!userInput){alert('수정 지시를 입력해주세요.');return;}
+
+  var keepStruct=document.getElementById('edit-keep-struct-'+key);
+  var keepTone=document.getElementById('edit-keep-tone-'+key);
+  var keepLen=document.getElementById('edit-keep-len-'+key);
+  var keeps=[];
+  if(keepStruct&&keepStruct.checked)keeps.push('제목과 구조는 반드시 유지할 것.');
+  if(keepTone&&keepTone.checked)keeps.push('톤앤매너는 반드시 유지할 것.');
+  if(keepLen&&keepLen.checked)keeps.push('길이와 분량은 반드시 유지할 것.');
+
+  var conId=appState.stepHistories[key].conId;
+  var con=document.getElementById(conId);
+  if(!con)return;
+
+  var currentContent=con.innerText;
+  var editPrompt=[
+    '아래는 기존 결과물이야.',
+    '=== 기존 결과물 ===',
+    currentContent,
+    '=================','',
+    '=== 수정 지시 ===',
+    '아래 지시에 따라 위 결과물을 수정해줘.',
+    '기존 구조와 형식은 유지하고 내용만 수정할 것.',
+    keeps.join(' '),
+    '수정 지시: '+userInput,
+    '================='
+  ].filter(Boolean).join(NL);
+
+  // 현재 내용을 히스토리에 저장
+  saveStepHistory(key,con.innerHTML);
+
+  con.innerHTML='<div class="loading-state"><div class="loader"></div><div class="loading-text">수정 적용 중...</div></div>';
+  closeEditPanel(key);
+
+  try{
+    var raw=await callAPI(editPrompt,8000);
+    var html='';
+    if(key==='plan'){
+      // plan은 JSON — 하지만 수정 시에는 raw text로 처리
+      html='<div class="treatment-doc"><div class="treatment-header"><div style="font-size:15px;font-weight:700">'+(appState.plan?appState.plan.title:'기획서')+'</div><div style="font-size:12px;color:var(--muted);margin-top:2px">수정됨</div></div><div class="treatment-ep" style="white-space:pre-wrap;font-size:14px;line-height:1.8;color:var(--text)">'+raw.replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</div></div>';
+    } else if(key==='treatment'){
+      html=renderTreatment(raw,appState.treatment?appState.treatment.title:'트리트먼트');
+    } else if(key==='script'){
+      html=renderScript(raw,appState.treatment?appState.treatment.title:'대본');
+    } else if(key==='storyboard'){
+      html=renderStoryboard(raw,appState.treatment?appState.treatment.title:'스토리보드');
+    } else if(key==='thumbnail'){
+      html=renderThumbnail(raw,appState.plan?appState.plan.title:'썸네일');
+    }
+    con.innerHTML=html;
+    saveStepHistory(key,html);
+  }catch(e){
+    con.innerHTML='<div class="error-box">수정 오류: '+e.message+'<br><br><button class="retry-btn" onclick="applyStepEdit(\''+key+'\')">다시 시도</button></div>';
+  }
+}
+
+// ── 시리즈 다음 회차 생성 ──
+async function generateNextEpisode(){
+  if(!appState.plan){alert('기획서가 없습니다.');return;}
+  var con=document.getElementById('plan-container');
+  if(!con)return;
+
+  var currentContent=con.innerText;
+  saveStepHistory('plan',con.innerHTML);
+
+  con.innerHTML='<div class="loading-state"><div class="loader"></div><div class="loading-text">다음 회차 생성 중...</div></div>';
+
+  var ctx=getChannelContext();
+  var prompt=[
+    getPersona(),
+    ctx, getMeetingBriefContext(),
+    '아래는 현재 회차 기획서야.',
+    '=== 현재 기획서 ===',
+    currentContent,
+    '=================','',
+    '위 기획서를 기반으로 다음 회차 기획서를 작성해줘.',
+    '포맷, 시리즈명, 톤앤매너, 구성 방식은 그대로 유지.',
+    '회차 번호만 +1 하고 소재와 내용만 새롭게 작성.',
+    'JSON 형식 유지.',
+    '{"title":"","subtitle":"","format":"","target":"","hook":"","sequences":[],"tools":"","diff":"","revenue":"","thumbnail":"","schedule":""}'
+  ].filter(Boolean).join(NL);
+
+  try{
+    var raw=await callAPI(prompt,4000);
+    var p=parseJSON(raw,false);
+    if(p){
+      appState.plan=p;
+      var planHtml='<div class="plan-doc"><div class="plan-doc-header"><div class="plan-doc-title">'+(p.title||'')+'</div><div class="plan-doc-subtitle">'+(p.subtitle||'')+'</div></div><div class="plan-doc-body">'
+        +pRow('FORMAT',p.format||'')+pRow('TARGET',p.target||'')+pRow('HOOK',p.hook||'')
+        +pRow('SEQUENCES',(p.sequences||p.episodes||[]).map(function(e,i){
+          var text=String(e).replace(/^SEQ\d+\s*:\s*/i,'');
+          return '<li><span>SEQ'+(i+1)+': '+text+'</span></li>';
+        }).join(''),true)
+        +pRow('TOOLS',p.tools||'')+pRow('DIFF',p.diff||'')+pRow('REVENUE',p.revenue||'')
+        +pRow('THUMBNAIL',p.thumbnail||'')+pRow('SCHEDULE',p.schedule||'')
+        +'</div></div>';
+      con.innerHTML=planHtml;
+      saveStepHistory('plan',planHtml);
+    } else {
+      // JSON 파싱 실패 시 raw 표시
+      var html='<div class="treatment-doc"><div class="treatment-header"><div style="font-size:15px;font-weight:700">다음 회차</div></div><div class="treatment-ep" style="white-space:pre-wrap;font-size:14px;line-height:1.8;color:var(--text)">'+raw.replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</div></div>';
+      con.innerHTML=html;
+      saveStepHistory('plan',html);
+    }
+  }catch(e){
+    con.innerHTML='<div class="error-box">다음 회차 생성 오류: '+e.message+'<br><br><button class="retry-btn" onclick="generateNextEpisode()">다시 시도</button></div>';
+  }
 }
 
 function saveStepHistory(key,html){
