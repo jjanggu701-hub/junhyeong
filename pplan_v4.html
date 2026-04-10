@@ -1157,32 +1157,38 @@ async function generateScenesChunked(p, con) {
     showBoardProgress(con, '씬 생성 중...', startNum, total);
 
     var prevCtx = allScenes.length
-      ? '앞선 씬 (연속성 유지): ' + allScenes.map(function(s){ return s.num + '(' + s.location + ' ' + s.time + ')'; }).join(', ')
+      ? '앞선 씬: ' + allScenes.map(function(s){ return s.num + '(' + s.location + ')'; }).join(', ')
       : '';
     var batchCount = endNum - startNum + 1;
     var numStr = function(n){ return 'S' + (n < 10 ? '0' : '') + n; };
 
     var prompt = [
-      '너는 영상 PD다. 씬 ' + startNum + '~' + endNum + '번 (전체 ' + total + '씬) JSON 배열만 작성해.',
-      '클라이언트: ' + p.client + ' | 프로젝트: ' + p.project,
-      '장르: ' + p.genre + ' | 영상 길이: ' + p.duration,
-      '톤앤매너: ' + (state.conceptData.tone_manner||[]).join(', '),
-      '키메시지: ' + (state.conceptData.key_message||''),
-      '디렉터 인텐션: ' + (state.overviewData ? state.overviewData.director_intention||'' : ''),
-      (p.purpose ? '콘텐츠 목적: ' + p.purpose : ''),
-      (p.request ? '클라이언트 요청: ' + p.request : ''),
-      (p.refurl ? '레퍼런스: ' + p.refurl : ''),
-      (p.note ? '특이사항: ' + p.note : ''),
+      '영상PD. S' + startNum + '~S' + endNum + ' (총' + total + '씬) JSON배열.',
+      p.client + '|' + p.project + '|' + p.genre + '|' + p.duration,
+      '톤:' + (state.conceptData.tone_manner||[]).join(','),
+      '키메시지:' + (state.conceptData.key_message||''),
+      '인텐션:' + (state.overviewData ? state.overviewData.director_intention||'' : ''),
+      (p.purpose ? '목적:' + p.purpose : ''),
+      (p.request ? '요청:' + p.request : ''),
+      (p.note ? '특이:' + p.note : ''),
       getSubjectContext(p),
       prevCtx,
       '',
-      '정확히 ' + batchCount + '개 씬만 JSON 배열 출력. 코드블록 없이.',
-      '[{"num":"' + numStr(startNum) + '","location":"장소","time":"0:00~0:15","description":"장면묘사 2~3문장","sov":"나레이션(없으면 빈문자열)","caption":["자막"]}]'
+      batchCount + '개 씬 JSON배열만. 코드블록 없이.',
+      '[{"num":"' + numStr(startNum) + '","location":"","time":"","description":"2~3문장","sov":"","caption":[""]}]'
     ].filter(Boolean).join(NL);
 
-    var raw = await callAPI(prompt, 1000);
-    var batch = parseJ(raw, true);
-    allScenes = allScenes.concat(Array.isArray(batch) ? batch : [batch]);
+    var raw = await callAPI(prompt, 1500);
+    try {
+      var batch = parseJ(raw, true);
+      allScenes = allScenes.concat(Array.isArray(batch) ? batch : [batch]);
+    } catch(e) {
+      console.error('[STEP04 씬 파싱 실패] raw:', raw);
+      con.innerHTML = '<div class="error-box">씬 ' + startNum + '~' + endNum + ' JSON 파싱 실패<br><br>'
+        + '<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:12px;font-size:11px;line-height:1.8;white-space:pre-wrap;max-height:200px;overflow-y:auto;margin-bottom:10px;color:var(--text)">' + raw.replace(/</g,'&lt;') + '</div>'
+        + '<button class="retry-btn" onclick="generateBoard()">다시 시도</button></div>';
+      throw new Error('씬 파싱 실패');
+    }
   }
 
   state.boardData = { scenes: allScenes };
@@ -1200,23 +1206,29 @@ async function generateEpisodesChunked(p, con) {
     showBoardProgress(con, '화별 가이드 생성 중...', epNum, total);
 
     var prompt = [
-      '너는 유튜브 PD다. ' + epStr + ' (전체 ' + total + '화) 진행가이드 JSON 1개만 작성해.',
-      '클라이언트: ' + p.client + ' | 프로젝트: ' + p.project,
-      '영상 길이: ' + p.duration,
-      '키메시지: ' + (state.conceptData.key_message||''),
-      '기획의도: ' + (state.conceptData.planning_intent||''),
-      '제작 포인트: ' + p.points,
-      (p.purpose ? '콘텐츠 목적: ' + p.purpose : ''),
-      (p.request ? '클라이언트 요청: ' + p.request : ''),
-      (p.refurl ? '레퍼런스: ' + p.refurl : ''),
-      (p.note ? '특이사항: ' + p.note : ''),
+      '유튜브PD. ' + epStr + ' (총' + total + '화) 진행가이드 JSON 1개.',
+      p.client + '|' + p.project + '|' + p.duration,
+      '키메시지:' + (state.conceptData.key_message||''),
+      '기획의도:' + (state.conceptData.planning_intent||''),
+      '포인트:' + p.points,
+      (p.purpose ? '목적:' + p.purpose : ''),
+      (p.request ? '요청:' + p.request : ''),
+      (p.note ? '특이:' + p.note : ''),
       '',
-      'JSON 1개만 출력. 코드블록 없이.',
-      '{"ep_num":"' + epStr + '","ep_title":"화 제목","opening":{"label":"STEP1 오프닝","desc":"훅 방식","points":["포인트1","포인트2"]},"main":{"label":"STEP2 본론","desc":"본 내용","points":["포인트1","포인트2","포인트3"]},"closing":{"label":"STEP3 마무리/티저","desc":"엔딩","points":["포인트1","포인트2"]}}'
+      'JSON 1개만. 코드블록 없이.',
+      '{"ep_num":"' + epStr + '","ep_title":"","opening":{"label":"STEP1 오프닝","desc":"","points":[""]},"main":{"label":"STEP2 본론","desc":"","points":[""]},"closing":{"label":"STEP3 마무리/티저","desc":"","points":[""]}}'
     ].filter(Boolean).join(NL);
 
-    var raw = await callAPI(prompt, 1000);
-    allEps.push(parseJ(raw, false));
+    var raw = await callAPI(prompt, 1500);
+    try {
+      allEps.push(parseJ(raw, false));
+    } catch(e) {
+      console.error('[STEP04 에피소드 파싱 실패] raw:', raw);
+      con.innerHTML = '<div class="error-box">' + epStr + ' JSON 파싱 실패<br><br>'
+        + '<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:12px;font-size:11px;line-height:1.8;white-space:pre-wrap;max-height:200px;overflow-y:auto;margin-bottom:10px;color:var(--text)">' + raw.replace(/</g,'&lt;') + '</div>'
+        + '<button class="retry-btn" onclick="generateBoard()">다시 시도</button></div>';
+      throw new Error('에피소드 파싱 실패');
+    }
   }
 
   state.boardData = { episodes: allEps };
