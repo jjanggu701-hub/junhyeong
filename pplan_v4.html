@@ -605,9 +605,18 @@ async function analyzeImage(base64Image) {
   return d.choices && d.choices[0] ? d.choices[0].message.content : null;
 }
 
+function sanitizeImagePrompt(prompt) {
+  return prompt
+    .replace(/로보락[^\s,]*/g, '흰색 원형 로봇청소기')
+    .replace(/samsung|삼성/gi, '전자제품')
+    .replace(/애플|apple/gi, '스마트기기')
+    .replace(/나이키|nike/gi, '스포츠 브랜드');
+}
+
 async function generateImage(prompt) {
   var key = document.getElementById('openai-key').value.trim();
-  if (!key) return null;
+  if (!key) return { url: null, error: 'OpenAI 키 없음' };
+  var safePrompt = sanitizeImagePrompt(prompt);
   var res = await fetch('https://api.openai.com/v1/images/generations', {
     method: 'POST',
     headers: {
@@ -616,14 +625,24 @@ async function generateImage(prompt) {
     },
     body: JSON.stringify({
       model: 'gpt-image-1.5',
-      prompt: prompt,
+      prompt: safePrompt,
       n: 1,
-      size: '1536x1024'
+      size: '1024x1024',
+      quality: 'medium'
     })
   });
-  if (!res.ok) return null;
+  if (!res.ok) {
+    var errMsg = 'API 오류 ' + res.status;
+    try { var e = await res.json(); if (e.error && e.error.message) errMsg = e.error.message; } catch(x) {}
+    console.error('[generateImage 오류]', errMsg);
+    return { url: null, error: errMsg };
+  }
   var d = await res.json();
-  return d.data && d.data[0] ? d.data[0].url : null;
+  var url = d.data && d.data[0] ? (d.data[0].url || d.data[0].b64_json) : null;
+  if (d.data && d.data[0] && d.data[0].b64_json && !d.data[0].url) {
+    url = 'data:image/png;base64,' + d.data[0].b64_json;
+  }
+  return { url: url, error: url ? null : '이미지 URL 없음' };
 }
 
 function handleSubjectUpload(inputId, btnEl) {
@@ -1268,11 +1287,13 @@ async function genSceneImage(idx) {
   el.innerHTML = '<div style="display:flex;align-items:center;gap:8px;padding:4px 0"><div class="loader" style="width:16px;height:16px;border-width:2px"></div><span style="font-size:11px;color:var(--muted);font-family:\'JetBrains Mono\',monospace">이미지 생성 중...</span></div>';
   var subCtx = getSubjectContext(state.info);
   var imgPrompt = (subCtx ? subCtx + '\n' : '') + (sc.description||'') + ', cinematic, 16:9';
-  var url = await generateImage(imgPrompt);
-  if (url) {
-    el.innerHTML = '<img src="' + url + '" style="width:100%;border-radius:6px;display:block;margin-top:4px">';
+  var result = await generateImage(imgPrompt);
+  if (result.url) {
+    el.innerHTML = '<img src="' + result.url + '" style="width:100%;border-radius:6px;display:block;margin-top:4px">';
   } else {
-    el.innerHTML = '<button onclick="genSceneImage(' + idx + ')" style="background:#180a0a;border:1px solid #4a1515;color:#ff9090;font-size:11px;padding:5px 12px;border-radius:5px;cursor:pointer;font-family:\'JetBrains Mono\',monospace">생성 실패 — 다시 시도</button>';
+    var errText = result.error ? result.error.replace(/</g,'&lt;').replace(/"/g,'&quot;') : '알 수 없는 오류';
+    el.innerHTML = '<div style="margin-bottom:6px;font-size:10px;color:#ff9090;font-family:\'JetBrains Mono\',monospace;line-height:1.6;word-break:break-all">' + errText + '</div>'
+      + '<button onclick="genSceneImage(' + idx + ')" style="background:#180a0a;border:1px solid #4a1515;color:#ff9090;font-size:11px;padding:5px 12px;border-radius:5px;cursor:pointer;font-family:\'JetBrains Mono\',monospace">생성 실패 — 다시 시도</button>';
   }
 }
 
