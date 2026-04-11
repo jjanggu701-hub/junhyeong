@@ -671,18 +671,19 @@ async function generateImage(prompt) {
         quality: 'medium'
       })
     });
-    if (!res.ok) {
+    if (res.ok) {
+      var d = await res.json();
+      var url = d.data && d.data[0] ? (d.data[0].url || d.data[0].b64_json) : null;
+      if (d.data && d.data[0] && d.data[0].b64_json && !d.data[0].url) {
+        url = 'data:image/png;base64,' + d.data[0].b64_json;
+      }
+      if (url) return { url: url, error: null };
+      console.error('[OpenAI 이미지] URL 없음, 다음 순위로 폴백');
+    } else {
       var errMsg = 'API 오류 ' + res.status;
       try { var e = await res.json(); if (e.error && e.error.message) errMsg = e.error.message; } catch(x) {}
-      console.error('[generateImage 오류]', errMsg);
-      return { url: null, error: errMsg };
+      console.error('[OpenAI 이미지 오류]', errMsg, '→ 다음 순위로 폴백');
     }
-    var d = await res.json();
-    var url = d.data && d.data[0] ? (d.data[0].url || d.data[0].b64_json) : null;
-    if (d.data && d.data[0] && d.data[0].b64_json && !d.data[0].url) {
-      url = 'data:image/png;base64,' + d.data[0].b64_json;
-    }
-    return { url: url, error: url ? null : '이미지 URL 없음' };
   }
 
   // 2순위: Google Gemini (나노바나나)
