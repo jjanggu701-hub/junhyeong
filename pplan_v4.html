@@ -689,12 +689,12 @@ async function generateImage(prompt) {
   // 2순위: Google Gemini (나노바나나)
   if (gKey) {
     try {
-      var res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=' + gKey, {
+      var res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent?key=' + gKey, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [{ text: safePrompt }] }],
-          generationConfig: { responseModalities: ['TEXT', 'IMAGE'] }
+          generationConfig: { responseModalities: ['IMAGE'], responseMimeType: 'image/png' }
         })
       });
       if (res.ok) {
@@ -708,7 +708,7 @@ async function generateImage(prompt) {
         }
       } else {
         var errBody = await res.json().catch(function(){ return {}; });
-        console.error('[Gemini 이미지 오류]', errBody);
+        console.error('[Gemini 폴백]', res.status, JSON.stringify(errBody));
       }
     } catch(e) {
       console.error('[Gemini 이미지 예외]', e);
