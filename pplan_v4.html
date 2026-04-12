@@ -172,7 +172,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.7}
 /* ── SNP PPM 스타일 출력 레이아웃 ── */
 .print-doc{font-family:'Noto Sans KR',sans-serif;color:#111;max-width:900px;margin:0 auto}
 /* 표지 — 다크 */
-.print-cover{background:#1c1c1e;color:#fff;padding:56px 60px 48px;min-height:460px;position:relative;display:flex;flex-direction:column;justify-content:flex-end}
+.print-cover{background:#1c1c1e;color:#fff;padding:56px 60px 48px;min-height:460px;position:relative;display:flex;flex-direction:column;justify-content:flex-end;page-break-after:always;break-after:page}
 .print-cover-snp{font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:4px;color:rgba(255,255,255,.35);position:absolute;top:32px;right:48px}
 .print-cover-cat{font-size:10px;color:rgba(255,255,255,.35);letter-spacing:2.5px;margin-bottom:16px;font-family:'JetBrains Mono',monospace;text-transform:uppercase}
 .print-cover-title{font-size:40px;font-weight:700;line-height:1.2;margin-bottom:22px;letter-spacing:-.5px}
@@ -180,7 +180,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.7}
 .print-cover-copy{font-size:10px;color:rgba(255,255,255,.22);font-family:'JetBrains Mono',monospace;position:absolute;bottom:28px;left:60px}
 .print-cover-datestr{font-size:10px;color:rgba(255,255,255,.22);font-family:'JetBrains Mono',monospace;position:absolute;bottom:28px;right:60px}
 /* 본문 페이지 */
-.print-page{background:#fff;padding:38px 52px 44px;position:relative;border-bottom:1px solid #ebebeb;page-break-after:always}
+.print-page{background:#fff;padding:38px 52px 44px;position:relative;border-bottom:1px solid #ebebeb;page-break-after:always;break-after:page;page-break-inside:avoid}
 /* 페이지 헤더 */
 .print-pg-hd{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px}
 .print-pg-section{font-size:9px;color:#bbb;letter-spacing:2px;font-family:'JetBrains Mono',monospace;text-transform:uppercase;margin-bottom:5px}
@@ -348,6 +348,17 @@ textarea{resize:vertical;min-height:72px;line-height:1.7}
   <div>
     <div class="sec-label">특이사항</div>
     <textarea id="inp-note" placeholder="예: 촬영일 3/29, 야외 불가, 출연자 2명"></textarea>
+  </div>
+  <div>
+    <div class="sec-label">씬 구성</div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <select id="inp-scene-mode" style="flex:1" onchange="toggleSceneInput()">
+        <option value="auto">AI 자동 판단</option>
+        <option value="manual">직접 입력</option>
+      </select>
+      <input type="number" id="inp-scene-count" placeholder="씬 수" min="1" max="20" style="width:80px;display:none">
+    </div>
+    <div class="field-hint">AI 자동 시 영상 길이·장르 기반으로 판단</div>
   </div>
   <!-- 피사체 설정 -->
   <div style="border:1px solid var(--border2);border-radius:8px;padding:14px;background:var(--surface2)">
@@ -1201,6 +1212,11 @@ async function generateBoard() {
   }
 }
 
+function toggleSceneInput() {
+  var mode = document.getElementById('inp-scene-mode').value;
+  document.getElementById('inp-scene-count').style.display = mode === 'manual' ? 'block' : 'none';
+}
+
 // 영상 길이 → 적정 씬 개수 추정
 function estimateSceneCount(duration) {
   var dur = (duration || '').toLowerCase();
@@ -1241,7 +1257,23 @@ function getSubjectContext(p) {
 
 // 씬 분할 생성 (2씬 배치)
 async function generateScenesChunked(p, con) {
-  var total = estimateSceneCount(p.duration);
+  var sceneMode = document.getElementById('inp-scene-mode').value;
+  var manualCount = parseInt(document.getElementById('inp-scene-count').value);
+  var total = (sceneMode === 'manual' && manualCount > 0)
+    ? Math.min(manualCount, 20)
+    : null;
+
+  if (!total) {
+    var countPrompt = [
+      '영상PD. 아래 조건의 PPM 제안서에 적합한 씬 수를 숫자 하나만 출력해줘.',
+      p.client + ' / ' + p.genre + ' / ' + p.duration + ' / ' + p.episodes,
+      '포인트: ' + p.points,
+      '설명 없이 숫자만. 예: 5'
+    ].join('\n');
+    var countRaw = await callAPI(countPrompt, 10);
+    total = Math.max(2, Math.min(20, parseInt(countRaw.trim()) || 5));
+  }
+
   var allScenes = [];
   var batchSize = 2;
 
@@ -1368,14 +1400,21 @@ async function genSceneImage(idx) {
   el.innerHTML = '<div style="display:flex;align-items:center;gap:8px;padding:4px 0"><div class="loader" style="width:16px;height:16px;border-width:2px"></div><span style="font-size:11px;color:var(--muted);font-family:\'JetBrains Mono\',monospace">이미지 생성 중...</span></div>';
   var subCtx = getSubjectContext(state.info);
   var imgPrompt = (subCtx ? subCtx + '\n' : '') + (sc.description||'') + ', cinematic, 16:9';
+  var safePrompt = sanitizeImagePrompt(imgPrompt).replace(/</g,'&lt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  var promptDetails = '<details style="margin-top:6px">'
+    + '<summary style="font-size:10px;color:var(--muted);font-family:\'JetBrains Mono\',monospace;cursor:pointer;user-select:none">▸ 이미지 프롬프트 보기</summary>'
+    + '<div style="font-size:11px;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:8px 10px;margin-top:5px;line-height:1.7;word-break:break-all">'
+    + safePrompt + '</div></details>';
   var result = await generateImage(imgPrompt);
   if (result.isPollinations) {
     el.innerHTML = '<div style="font-size:10px;color:var(--muted);font-family:\'JetBrains Mono\',monospace;margin-bottom:6px">Pollinations (무료) — 로딩 중...</div>'
       + '<img src="' + result.url + '" style="width:100%;border-radius:6px;display:block;margin-top:4px" '
       + 'onload="this.previousElementSibling.textContent=\'Pollinations (무료)\'" '
-      + 'onerror="this.previousElementSibling.textContent=\'Pollinations 생성 실패\';this.previousElementSibling.style.color=\'#ff9090\'">';
+      + 'onerror="this.previousElementSibling.textContent=\'Pollinations 생성 실패\';this.previousElementSibling.style.color=\'#ff9090\'">'
+      + promptDetails;
   } else if (result.url) {
-    el.innerHTML = '<img src="' + result.url + '" style="width:100%;border-radius:6px;display:block;margin-top:4px">';
+    el.innerHTML = '<img src="' + result.url + '" style="width:100%;border-radius:6px;display:block;margin-top:4px">'
+      + promptDetails;
   } else {
     var errText = result.error ? result.error.replace(/</g,'&lt;').replace(/"/g,'&quot;') : '알 수 없는 오류';
     el.innerHTML = '<div style="margin-bottom:6px;font-size:10px;color:#ff9090;font-family:\'JetBrains Mono\',monospace;line-height:1.6;word-break:break-all">' + errText + '</div>'
@@ -1475,6 +1514,7 @@ function bgClose(ev, id, fn) { if (ev.target === document.getElementById(id)) fn
 
 // ── EXPORT ──
 function openExport() {
+  console.log('[Export] state:', !!state.overviewData, !!state.conceptData, !!state.boardData);
   document.getElementById('prev-box').innerHTML = buildPrint();
   document.getElementById('prev-overlay').classList.add('vis');
 }
@@ -1510,11 +1550,11 @@ function buildPrint() {
       + '<div><div class="print-pg-section">I. 제안개요</div><div class="print-pg-title">01 &nbsp;|&nbsp; 제안개요</div></div>'
       + '<div class="print-pg-snp">SNPCOMPANY</div></div>'
       + '<table class="print-table">'
-      + prow('타이틀', '<strong>' + (d.title||'') + '</strong>')
-      + prow('클라이언트', d.client||'')
-      + prow('영상 포맷', d.format||'')
-      + prow('영상 길이', d.duration||'')
-      + prow('편수', d.episodes||'')
+      + pr('타이틀', '<strong>' + (d.title||'') + '</strong>')
+      + pr('클라이언트', d.client||'')
+      + pr('영상 포맷', d.format||'')
+      + pr('영상 길이', d.duration||'')
+      + pr('편수', d.episodes||'')
       + '<tr><td class="print-lk">제작 포인트</td><td class="print-lv" style="padding-top:12px;padding-bottom:12px">' + pts + '</td></tr>'
       + '</table>'
       + '<div class="print-intent-box">'
@@ -1599,14 +1639,14 @@ function downloadHTML() {
     + '<style>'
     + 'body{font-family:"Noto Sans KR",sans-serif;background:#fff;margin:0;padding:0;color:#111}'
     + '.print-doc{font-family:"Noto Sans KR",sans-serif;color:#111;max-width:900px;margin:0 auto}'
-    + '.print-cover{background:#1c1c1e;color:#fff;padding:56px 60px 48px;min-height:460px;position:relative;display:flex;flex-direction:column;justify-content:flex-end}'
+    + '.print-cover{background:#1c1c1e;color:#fff;padding:56px 60px 48px;min-height:460px;position:relative;display:flex;flex-direction:column;justify-content:flex-end;page-break-after:always;break-after:page}'
     + '.print-cover-snp{font-family:"Bebas Neue",sans-serif;font-size:12px;letter-spacing:4px;color:rgba(255,255,255,.35);position:absolute;top:32px;right:48px}'
     + '.print-cover-cat{font-size:10px;color:rgba(255,255,255,.35);letter-spacing:2.5px;margin-bottom:16px;font-family:"JetBrains Mono",monospace;text-transform:uppercase}'
     + '.print-cover-title{font-size:40px;font-weight:700;line-height:1.2;margin-bottom:22px;letter-spacing:-.5px}'
     + '.print-cover-sub{font-size:11px;color:rgba(255,255,255,.4);font-family:"JetBrains Mono",monospace;letter-spacing:1.5px}'
     + '.print-cover-copy{font-size:10px;color:rgba(255,255,255,.22);font-family:"JetBrains Mono",monospace;position:absolute;bottom:28px;left:60px}'
     + '.print-cover-datestr{font-size:10px;color:rgba(255,255,255,.22);font-family:"JetBrains Mono",monospace;position:absolute;bottom:28px;right:60px}'
-    + '.print-page{background:#fff;padding:38px 52px 44px;position:relative;border-bottom:1px solid #ebebeb;page-break-after:always}'
+    + '.print-page{background:#fff;padding:38px 52px 44px;position:relative;border-bottom:1px solid #ebebeb;page-break-after:always;break-after:page;page-break-inside:avoid}'
     + '.print-pg-hd{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px}'
     + '.print-pg-section{font-size:9px;color:#bbb;letter-spacing:2px;font-family:"JetBrains Mono",monospace;text-transform:uppercase;margin-bottom:5px}'
     + '.print-pg-title{font-size:21px;font-weight:700;color:#111;line-height:1.2}'
