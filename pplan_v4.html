@@ -1683,14 +1683,21 @@ function buildPrint() {
   // ── III. 스토리보드 / 진행가이드 ──
   if (state.boardData) {
     var isSeries = p.genre === '유튜브시리즈';
-    html += '<div class="print-page">'
-      + '<div class="print-pg-hd">'
-      + '<div><div class="print-pg-section">III. ' + (isSeries ? '화별 진행가이드' : '씬별 스토리보드') + '</div>'
-      + '<div class="print-pg-title">01 &nbsp;|&nbsp; ' + (isSeries ? '화별 구성' : '씬별 스토리보드') + '</div></div>'
-      + '<div class="print-pg-snp">SNPCOMPANY</div></div>';
 
     if (isSeries) {
-      (state.boardData.episodes||[]).forEach(function(ep){
+      (state.boardData.episodes||[]).forEach(function(ep, epIdx){
+        html += '<div class="print-page">';
+        if (epIdx === 0) {
+          html += '<div class="print-pg-hd">'
+            + '<div><div class="print-pg-section">III. 화별 진행가이드</div>'
+            + '<div class="print-pg-title">01 &nbsp;|&nbsp; 화별 구성</div></div>'
+            + '<div class="print-pg-snp">SNPCOMPANY</div></div>';
+        } else {
+          html += '<div class="print-pg-hd">'
+            + '<div><div class="print-pg-section">III. 화별 진행가이드</div>'
+            + '<div class="print-pg-title">' + (ep.ep_num||'') + ' &nbsp;|&nbsp; ' + (ep.ep_title||'') + '</div></div>'
+            + '<div class="print-pg-snp">SNPCOMPANY</div></div>';
+        }
         html += '<div class="print-ep-block">'
           + '<div class="print-ep-num">' + (ep.ep_num||'') + '</div>'
           + '<div class="print-ep-title">' + (ep.ep_title||'') + '</div>';
@@ -1704,8 +1711,14 @@ function buildPrint() {
             + '</div></div>';
         });
         html += '</div>';
+        html += '<div class="print-pg-num">' + (4 + epIdx) + '</div></div>';
       });
     } else {
+      html += '<div class="print-page">'
+        + '<div class="print-pg-hd">'
+        + '<div><div class="print-pg-section">III. 씬별 스토리보드</div>'
+        + '<div class="print-pg-title">01 &nbsp;|&nbsp; 씬별 스토리보드</div></div>'
+        + '<div class="print-pg-snp">SNPCOMPANY</div></div>';
       (state.boardData.scenes||[]).forEach(function(sc, idx){
         var caps = (sc.caption||[]).join(' / ');
         html += '<div class="print-scene-block">'
@@ -1716,8 +1729,8 @@ function buildPrint() {
           + (caps ? '<div class="print-scene-cap">자막 ) ' + caps + '</div>' : '')
           + '</div>';
       });
+      html += '<div class="print-pg-num">4</div></div>';
     }
-    html += '<div class="print-pg-num">4</div></div>';
   }
 
   html += '<div style="padding:12px 52px"><div class="print-footer">'
