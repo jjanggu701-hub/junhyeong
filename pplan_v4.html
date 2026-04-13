@@ -592,12 +592,53 @@ function copyEl(id) {
   });
 }
 
+function getSystemContext() {
+  var genre = (state.genre || '').toLowerCase();
+  var base = 'SNP Company 소속 영상 기획 PD다. 아래 SNP의 실제 기획서 패턴을 반드시 따를 것.\n\n';
+
+  if (genre === '유튜브시리즈') {
+    return base +
+      '=== SNP 유튜브 시리즈 기획 패턴 ===\n' +
+      '포맷: 보이는 팟캐스트형 토크쇼. 출연진 3~4인. 과한 연출 지양. 정보 과잉 지양.\n' +
+      '화별 구성: STEP1 오프닝(자기소개+오늘의키워드공개+워밍업질문) / STEP2 질문카드라운드(카드뽑기→각자답변, 최소3장) / STEP3 오늘의한문장+다음화티저+댓글유도\n' +
+      '질문 원칙: 추상적 개념 질문 금지. 구체적 현장 에피소드를 꺼낼 수 있는 질문만. 특정인 실명 금지. 내 기준/내 고민 중심.\n' +
+      '진행가이드 예시(플라톡 7화):\n' +
+      'STEP1 - PD: 오늘 키워드 [색깔] 공개. 아이들이 원장님 수업을 한마디로 표현하면?\n' +
+      'STEP2 - 질문카드: 내 수업에서 특히 강점이라 느끼는 부분은? / 학원만의 차별화된 운영방식은?\n' +
+      'STEP3 - 각자 한문장: 내 수업의 색깔은 결국 아이를 어떻게 보느냐에서 나온다.\n' +
+      '=================================\n';
+  }
+
+  if (genre === '브랜드필름' || genre === '광고') {
+    return base +
+      '=== SNP 브랜드필름/광고 기획 패턴 ===\n' +
+      '포맷: 실사 기반 영상. 과도한 CG 지양. 제품/브랜드 자연스러운 노출.\n' +
+      '연출 방향: 인터뷰 기반 드라마타이즈 또는 라이프스타일 다큐형.\n' +
+      '씬 구성: 시네마틱 톤. 실내 촬영 중심. 인물+제품+공간의 자연스러운 조화.\n' +
+      'PPM 구성: 제안개요 / 기획의도 / 컨셉및톤앤매너 / 씬별스토리보드.\n' +
+      '제작 원칙: 브랜드 메시지는 직접 언급하지 말고 영상으로 보여줄 것.\n' +
+      '=====================================\n';
+  }
+
+  if (genre === '기념영상') {
+    return base +
+      '=== SNP 기념영상 기획 패턴 ===\n' +
+      '포맷: 감동형 다큐/기록 영상. 인터뷰+현장 B-roll 조합.\n' +
+      '구성: 오프닝 훅 → 인터뷰 중심 전개 → 감동 클라이맥스 → 마무리.\n' +
+      '톤: 따뜻하고 진솔한 분위기. 과한 음악/효과 지양.\n' +
+      '================================\n';
+  }
+
+  return base +
+    'SNP Company 영상 기획서 작성 원칙: 과한 연출 지양. 브랜드 메시지는 자연스럽게. 실제 제작 가능한 수준의 구체성 유지.\n';
+}
+
 async function callAPI(prompt, maxTok) {
   var aKey = document.getElementById('anthropic-key').value.trim();
   var res = await fetch(API, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-api-key': aKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-    body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: maxTok, messages: [{ role: 'user', content: prompt }] })
+    body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: maxTok, system: getSystemContext(), messages: [{ role: 'user', content: prompt }] })
   });
   if (!res.ok) { var e = await res.json().catch(function(){ return {}; }); throw new Error(e.error ? e.error.message : 'API 오류 ' + res.status); }
   var d = await res.json();
