@@ -1416,22 +1416,102 @@ function renderStoryboard(d) {
   document.getElementById('board-container').innerHTML = html + '</div>';
 }
 
+async function buildImagePrompt(sc, p) {
+  var subCtx = getSubjectContext(p);
+  var convertPrompt = [
+    '너는 광고 영상 콘티 이미지 생성 전문가야.',
+    '아래 씬 정보를 이미지 생성 AI에 최적화된 영어 프롬프트로 변환해줘.',
+    '',
+    '씬 정보:',
+    '장소: ' + (sc.location || ''),
+    '장면 묘사: ' + (sc.description || ''),
+    (sc.sov ? 'SOV/나레이션: ' + sc.sov : ''),
+    (subCtx ? subCtx : ''),
+    '톤앤매너: ' + ((p._conceptTone || []).join(', ')),
+    '장르: ' + (p.genre || ''),
+    '',
+    '규칙:',
+    '- 영어로만 출력',
+    '- 시간 정보(10초, 3초 등) 제거',
+    '- 연출 지시어(클로즈업, 미디엄샷 등)는 카메라 앵글 표현으로 변환',
+    '- 인물 묘사는 구체적으로 (나이, 헤어, 의상, 표정)',
+    '- 조명/분위기/공간감 반드시 포함',
+    '- cinematic, 16:9, photorealistic 항상 포함',
+    '- 브랜드명 절대 포함 금지',
+    '- 50단어 이내',
+    '',
+    '프롬프트만 출력. 설명 없이.'
+  ].filter(Boolean).join('\n');
+
+  try {
+    var converted = await callAPI(convertPrompt, 200);
+    return converted.trim();
+  } catch(e) {
+    return (subCtx ? subCtx + '\n' : '') + (sc.description || '') + ', cinematic, 16:9, photorealistic';
+  }
+}
+
+function renderImageSuccess(el, idx, imgUrl, imgPrompt) {
+  var safePrompt = imgPrompt.replace(/</g,'&lt;').replace(/'/g,'&#39;').replace(/"/g,'&quot;');
+  el.innerHTML =
+    '<img src="' + imgUrl + '" style="width:100%;border-radius:6px;display:block;margin-top:4px" id="img-result-' + idx + '">'
+    + '<div style="margin-top:8px">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">'
+    + '<span style="font-size:10px;color:var(--muted);font-family:\'JetBrains Mono\',monospace">IMAGE PROMPT</span>'
+    + '<button onclick="toggleImgEdit(' + idx + ')" style="background:none;border:1px solid var(--border);color:var(--muted);font-size:10px;padding:2px 8px;border-radius:3px;cursor:pointer;font-family:\'JetBrains Mono\',monospace">✏ 수정</button>'
+    + '</div>'
+    + '<div id="img-prompt-' + idx + '" style="font-size:11px;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:8px 10px;line-height:1.7;word-break:break-all">'
+    + safePrompt + '</div>'
+    + '<div id="img-edit-' + idx + '" style="display:none;margin-top:6px">'
+    + '<textarea id="img-edit-text-' + idx + '" style="min-height:72px;font-size:12px;margin-bottom:6px">' + safePrompt + '</textarea>'
+    + '<div style="display:flex;gap:6px">'
+    + '<button onclick="regenImage(' + idx + ')" style="background:var(--accent);color:#000;border:none;padding:7px 16px;border-radius:5px;cursor:pointer;font-size:12px;font-family:\'Noto Sans KR\',sans-serif;font-weight:500">재생성</button>'
+    + '<button onclick="toggleImgEdit(' + idx + ')" style="background:var(--surface);border:1px solid var(--border);color:var(--muted);padding:7px 16px;border-radius:5px;cursor:pointer;font-size:12px;font-family:\'Noto Sans KR\',sans-serif">취소</button>'
+    + '</div></div>'
+    + '</div>';
+}
+
+function toggleImgEdit(idx) {
+  var el = document.getElementById('img-edit-' + idx);
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+async function regenImage(idx) {
+  var customPrompt = document.getElementById('img-edit-text-' + idx).value.trim();
+  if (!customPrompt) return;
+  var el = document.getElementById('scene-img-' + idx);
+  el.innerHTML = '<div style="display:flex;align-items:center;gap:8px;padding:4px 0">'
+    + '<div class="loader" style="width:16px;height:16px;border-width:2px"></div>'
+    + '<span style="font-size:11px;color:var(--muted);font-family:\'JetBrains Mono\',monospace">재생성 중...</span></div>';
+  var result = await generateImage(customPrompt);
+  if (result.url) {
+    renderImageSuccess(el, idx, result.url, customPrompt);
+  } else {
+    var errText = result.error ? result.error.replace(/</g,'&lt;').replace(/"/g,'&quot;') : '알 수 없는 오류';
+    el.innerHTML = '<div style="margin-bottom:6px;font-size:10px;color:#ff9090;font-family:\'JetBrains Mono\',monospace;line-height:1.6;word-break:break-all">' + errText + '</div>'
+      + '<button onclick="regenImage(' + idx + ')" style="background:#180a0a;border:1px solid #4a1515;color:#ff9090;font-size:11px;padding:5px 12px;border-radius:5px;cursor:pointer;font-family:\'JetBrains Mono\',monospace">다시 시도</button>';
+  }
+}
+
 async function genSceneImage(idx) {
   var sc = state.boardData && state.boardData.scenes && state.boardData.scenes[idx];
   if (!sc) return;
+  if (state.conceptData && state.info) {
+    state.info._conceptTone = state.conceptData.tone_manner || [];
+  }
   var el = document.getElementById('scene-img-' + idx);
-  el.innerHTML = '<div style="display:flex;align-items:center;gap:8px;padding:4px 0"><div class="loader" style="width:16px;height:16px;border-width:2px"></div><span style="font-size:11px;color:var(--muted);font-family:\'JetBrains Mono\',monospace">이미지 생성 중...</span></div>';
-  var subCtx = getSubjectContext(state.info);
-  var imgPrompt = (subCtx ? subCtx + '\n' : '') + (sc.description||'') + ', cinematic, 16:9';
-  var safePrompt = sanitizeImagePrompt(imgPrompt).replace(/</g,'&lt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-  var promptDetails = '<details style="margin-top:6px">'
-    + '<summary style="font-size:10px;color:var(--muted);font-family:\'JetBrains Mono\',monospace;cursor:pointer;user-select:none">▸ 이미지 프롬프트 보기</summary>'
-    + '<div style="font-size:11px;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:8px 10px;margin-top:5px;line-height:1.7;word-break:break-all">'
-    + safePrompt + '</div></details>';
+  el.innerHTML = '<div style="display:flex;align-items:center;gap:8px;padding:4px 0">'
+    + '<div class="loader" style="width:16px;height:16px;border-width:2px"></div>'
+    + '<span style="font-size:11px;color:var(--muted);font-family:\'JetBrains Mono\',monospace" id="img-loading-' + idx + '">프롬프트 변환 중...</span></div>';
+
+  var imgPrompt = await buildImagePrompt(sc, state.info);
+
+  var loadingEl = document.getElementById('img-loading-' + idx);
+  if (loadingEl) loadingEl.textContent = '이미지 생성 중...';
+
   var result = await generateImage(imgPrompt);
   if (result.url) {
-    el.innerHTML = '<img src="' + result.url + '" style="width:100%;border-radius:6px;display:block;margin-top:4px">'
-      + promptDetails;
+    renderImageSuccess(el, idx, result.url, imgPrompt);
   } else {
     var errText = result.error ? result.error.replace(/</g,'&lt;').replace(/"/g,'&quot;') : '알 수 없는 오류';
     el.innerHTML = '<div style="margin-bottom:6px;font-size:10px;color:#ff9090;font-family:\'JetBrains Mono\',monospace;line-height:1.6;word-break:break-all">' + errText + '</div>'
