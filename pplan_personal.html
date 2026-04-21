@@ -929,13 +929,12 @@ async function callAPI(prompt, maxTok, systemContext) {
   var sysCtx = systemContext || buildSystemContext(appState.input, appState.context);
   var cKey = getClaudeKey();
   if (!cKey) throw new Error('Claude API 키를 사이드바에 입력해주세요.');
-  var response = await fetch('https://api.anthropic.com/v1/messages', {
+  var response = await fetch(PROXY + encodeURIComponent('https://api.anthropic.com/v1/messages'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': cKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-ipc': 'true'
+      'anthropic-version': '2023-06-01'
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-6',
@@ -1742,13 +1741,12 @@ async function handlePdfUpload(files) {
       var base64 = await fileToBase64(file);
       var cKey = getClaudeKey();
       if (!cKey) throw new Error('Claude API 키를 사이드바에 입력해주세요.');
-      var response = await fetch('https://api.anthropic.com/v1/messages', {
+      var response = await fetch(PROXY + encodeURIComponent('https://api.anthropic.com/v1/messages'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': cKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-ipc': 'true'
+          'anthropic-version': '2023-06-01'
         },
         body: JSON.stringify({
           model: 'claude-sonnet-4-6', max_tokens: 4000,
