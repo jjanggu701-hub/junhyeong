@@ -1726,45 +1726,51 @@ async function handlePdfUpload(files) {
       var base64 = await fileToBase64(file);
       var response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-6', max_tokens: 1500,
+          model: 'claude-sonnet-4-6', max_tokens: 4000,
           messages: [{ role: 'user', content: [
             { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } },
-            { type: 'text', text: '이 PPM/기획서 PDF에서 다음 항목을 추출해줘. JSON만 출력해.\n\n'
-              + '{"화수":숫자,"시리즈명":"","키워드":"","무드톤":"","디자인방향":"","주요질문카드":"",'
-              + '"씬요약":"","나레이션방향":"","촬영포인트":"","다음화포인트":""}' }
+            { type: 'text', text: '이 PPM/기획서 PDF에 여러 화가 포함되어 있을 수 있습니다. 화별로 각각 분리해서 JSON 배열로 출력해줘. JSON 배열만 출력해.\n\n'
+              + '[{"화수":숫자,"시리즈명":"","키워드":"","무드톤":"","디자인방향":"","주요질문카드":"",'
+              + '"씬요약":"","나레이션방향":"","촬영포인트":"","다음화포인트":""}]' }
           ]}]
         })
       });
       var resData = await response.json();
       var raw = (resData.content && resData.content[0]) ? resData.content[0].text : '';
       var clean = raw.replace(/```json|```/g, '').trim();
-      var extracted = JSON.parse(clean);
+      var parsed = JSON.parse(clean);
 
-      // 파일명에서 화수 추출 보완
-      if (!extracted.화수 || extracted.화수 === 0) {
+      // 단일 객체면 배열로 감싸기
+      var episodes = Array.isArray(parsed) ? parsed : [parsed];
+
+      // 파일명에서 화수 보완 (1개짜리이고 화수 없을 때만)
+      if (episodes.length === 1 && (!episodes[0].화수 || episodes[0].화수 === 0)) {
         var numMatch = file.name.match(/(\d+)화/);
-        if (numMatch) extracted.화수 = parseInt(numMatch[1]);
+        if (numMatch) episodes[0].화수 = parseInt(numMatch[1]);
       }
 
-      await saveHistoryToNotion({
-        episode: extracted.화수, keyword: extracted.키워드 || '', seriesName: extracted.시리즈명 || '',
-        무드톤: extracted.무드톤, 디자인방향: extracted.디자인방향, 주요질문카드: extracted.주요질문카드,
-        씬요약: extracted.씬요약, 나레이션방향: extracted.나레이션방향,
-        촬영포인트: extracted.촬영포인트, 다음화포인트: extracted.다음화포인트
-      });
+      for (var j = 0; j < episodes.length; j++) {
+        var ep = episodes[j];
+        statusEl.textContent = '⏳ ' + file.name + ' — ' + ep.화수 + '화 저장 중 (' + (j+1) + '/' + episodes.length + ')...';
+        await saveHistoryToNotion({
+          episode: ep.화수, keyword: ep.키워드 || '', seriesName: ep.시리즈명 || '',
+          무드톤: ep.무드톤, 디자인방향: ep.디자인방향, 주요질문카드: ep.주요질문카드,
+          씬요약: ep.씬요약, 나레이션방향: ep.나레이션방향,
+          촬영포인트: ep.촬영포인트, 다음화포인트: ep.다음화포인트
+        });
+        if (j < episodes.length - 1) await sleep(1000);
+      }
 
-      statusEl.textContent = '✅ ' + (i + 1) + '/' + files.length + ' — ' + file.name + ' 저장 완료';
+      statusEl.textContent = '✅ ' + file.name + ' — ' + episodes.length + '개 화 저장 완료';
     } catch(e) {
       statusEl.textContent = '❌ ' + file.name + ' 실패: ' + e.message;
       console.error(e);
     }
     if (i < files.length - 1) await sleep(2000);
   }
-  statusEl.textContent = '✅ 전체 ' + files.length + '개 PDF 저장 완료';
+  statusEl.textContent = '✅ 전체 ' + files.length + '개 파일 처리 완료';
 }
 
 function fileToBase64(file) {
