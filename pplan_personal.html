@@ -2072,12 +2072,20 @@ function getPrintCSS() {
 
 function printDoc() {
   var content = buildPrint();
-  var w = window.open('', '_blank');
-  w.document.write('<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8">'
+  var iframe = document.createElement('iframe');
+  iframe.style.cssText = 'position:fixed;left:-9999px;top:0;width:210mm;height:297mm;border:none';
+  document.body.appendChild(iframe);
+  var doc = iframe.contentDocument || iframe.contentWindow.document;
+  doc.open();
+  doc.write('<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8">'
     + '<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">'
     + '<style>' + getPrintCSS() + '</style></head><body>' + content + '</body></html>');
-  w.document.close();
-  w.onload = function() { w.print(); };
+  doc.close();
+  iframe.onload = function() {
+    iframe.contentWindow.focus();
+    iframe.contentWindow.print();
+    setTimeout(function() { document.body.removeChild(iframe); }, 2000);
+  };
 }
 
 function downloadHTML() {
