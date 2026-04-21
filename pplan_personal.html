@@ -1733,6 +1733,7 @@ async function handlePdfUpload(files) {
   }
   var statusEl = document.getElementById('pdf-status');
   statusEl.textContent = '⏳ 0/' + files.length + ' 처리 중...';
+  var successCount = 0; var failCount = 0;
 
   for (var i = 0; i < files.length; i++) {
     var file = files[i];
@@ -1786,13 +1787,19 @@ async function handlePdfUpload(files) {
       }
 
       statusEl.textContent = '✅ ' + file.name + ' — ' + episodes.length + '개 화 저장 완료';
+      successCount++;
     } catch(e) {
       statusEl.textContent = '❌ ' + file.name + ' 실패: ' + e.message;
       console.error(e);
+      failCount++;
     }
     if (i < files.length - 1) await sleep(2000);
   }
-  statusEl.textContent = '✅ 전체 ' + files.length + '개 파일 처리 완료';
+  if (failCount === 0) {
+    statusEl.textContent = '✅ 전체 ' + files.length + '개 파일 처리 완료';
+  } else {
+    statusEl.textContent = '⚠️ 성공 ' + successCount + '개 / 실패 ' + failCount + '개 — 위 오류 메시지 확인';
+  }
 }
 
 function fileToBase64(file) {
