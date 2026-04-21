@@ -923,7 +923,7 @@ async function callAPI(prompt, maxTok, systemContext) {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       max_tokens: maxTok || 1000,
       system: sysCtx,
       messages: [{ role: 'user', content: prompt }]
@@ -1730,7 +1730,7 @@ async function handlePdfUpload(files) {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514', max_tokens: 1500,
+          model: 'claude-sonnet-4-6', max_tokens: 1500,
           messages: [{ role: 'user', content: [
             { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } },
             { type: 'text', text: '이 PPM/기획서 PDF에서 다음 항목을 추출해줘. JSON만 출력해.\n\n'
